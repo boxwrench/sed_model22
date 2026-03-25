@@ -1,0 +1,49 @@
+metadata:
+  case_id: verification_empty_basin
+  title: Verification Empty Basin
+  description: Empty basin case for mass-balance and symmetry checks.
+  stage: v0.1
+
+geometry:
+  length_m: 60.0
+  width_m: 20.0
+  water_depth_m: 3.0
+
+hydraulics:
+  flow_rate_m3_s: 0.6
+  temperature_c: 20.0
+
+inlet:
+  side: west
+  center_m: 10.0
+  span_m: 4.0
+
+outlet:
+  side: east
+  center_m: 10.0
+  span_m: 4.0
+
+boundaries:
+  wall_condition: impermeable
+  baffle_condition: impermeable
+
+bed:
+  model: flat
+  slope_x_m_per_m: 0.0
+  slope_y_m_per_m: 0.0
+
+baffles: []
+
+numerics:
+  nx: 48
+  ny: 16
+  solver_model: steady_screening_potential
+  max_iterations: 2200
+  tolerance: 0.000001
+  relaxation_factor: 1.65
+
+outputs:
+  run_root: runs
+  write_layout_svg: true
+  write_velocity_svg: true
+  write_fields_json: true

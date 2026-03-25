@@ -1,0 +1,63 @@
+metadata:
+  case_id: baseline_rectangular_basin
+  title: Baseline Rectangular Basin
+  description: Screening-flow scenario for the first real hydraulic core.
+  stage: v0.1
+
+geometry:
+  length_m: 100.0
+  width_m: 30.0
+  water_depth_m: 3.2
+
+hydraulics:
+  flow_rate_m3_s: 0.85
+  temperature_c: 18.0
+
+inlet:
+  side: west
+  center_m: 15.0
+  span_m: 4.0
+
+outlet:
+  side: east
+  center_m: 15.0
+  span_m: 6.0
+
+boundaries:
+  wall_condition: impermeable
+  baffle_condition: impermeable
+
+bed:
+  model: flat
+  slope_x_m_per_m: 0.0
+  slope_y_m_per_m: 0.0
+
+baffles:
+  - name: inlet_energy_baffle
+    kind: full_depth_solid
+    x1_m: 12.0
+    y1_m: 4.0
+    x2_m: 12.0
+    y2_m: 26.0
+  - name: downstream_deflection_baffle
+    kind: full_depth_solid
+    x1_m: 60.0
+    y1_m: 8.0
+    x2_m: 60.0
+    y2_m: 30.0
+
+numerics:
+  nx: 80
+  ny: 24
+  solver_model: steady_screening_potential
+  turbulence_model: constant_eddy_viscosity
+  eddy_viscosity_m2_s: 0.001
+  max_iterations: 3000
+  tolerance: 0.000001
+  relaxation_factor: 1.65
+
+outputs:
+  run_root: runs
+  write_layout_svg: true
+  write_velocity_svg: true
+  write_fields_json: true

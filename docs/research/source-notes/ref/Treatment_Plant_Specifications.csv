@@ -1,0 +1,52 @@
+COMPONENT_TYPE,COMPONENT_NAME,PARAMETER,VALUE,UNIT,NOTES
+DESIGN FLOWS,Average Flow,Flow Rate,80,M.G.D.,
+DESIGN FLOWS,Peak Flow,Flow Rate,160,M.G.D.,
+INTAKE,Raw Water Main,Diameter,65,Inches,
+STORAGE,Wash Water Tank,Capacity,500000,Gallons,
+STORAGE,Wash Water Tank,Top Elevation,455.83,Feet,
+STORAGE,Wash Water Tank,Bottom Elevation,451.33,Feet,
+RAPID MIX,Flash Mix Vault,G-Value,2000,s⁻¹,Design parameter
+RAPID MIX,Flash Mix Vault,Weir Crest Elevation,450.71,Feet,Overflow point
+CLARIFICATION,Sedimentation Basin,Water Level (80 MGD),448.22,Feet,Design elevation
+CLARIFICATION,Sedimentation Basin,Water Level (160 MGD),448.85,Feet,Design elevation
+CLARIFICATION,Sedimentation Basin,Overflow Weir Elevation,450.71,Feet,Crest level
+CLARIFICATION,Sedimentation Basin,Discharge Weir - High,446.21,Feet,Elevation
+CLARIFICATION,Sedimentation Basin,Discharge Weir - Low,446.11,Feet,Elevation
+CLARIFICATION,Sedimentation Basin,Cell Dimension 1,300,Feet,Length
+CLARIFICATION,Sedimentation Basin,Cell Dimension 2,200,Feet,Width
+CLARIFICATION,Sedimentation Basin,Walkway Elevation,448.00,Feet,
+CLARIFICATION,Sedimentation Basin,Floor Elevation,432.00,Feet,Top of floor
+PLATE SETTLER,Plate Settler System,Inlet Elevation - High,443.45,Feet,
+PLATE SETTLER,Plate Settler System,Inlet Elevation - Low,443.42,Feet,
+PLATE SETTLER,Plate Settler System,Outlet Elevation,442.85,Feet,Settled water outlet
+FILTRATION,Filter Cells,Cell Dimension,300,Feet,Length/Width
+FILTRATION,Filter Cells,Water Level Range,442-445,Feet,Operating range
+FILTRATION,Flow Distribution,Chamber Elevation,432.33,Feet,
+FILTERED WATER,Settled Water Conduit,Elevation,436.50,Feet,
+FILTERED WATER,Settled Water Conduit,Bottom of Conduit - High,418.92,Feet,
+FILTERED WATER,Settled Water Conduit,Bottom of Conduit - Low,418.25,Feet,
+CLEAR WELL,Clear Well,Bottom Elevation,418.92,Feet,
+EFFLUENT,Effluent Weir Crest - High,Elevation,430.95,Feet,
+EFFLUENT,Effluent Weir Crest - Low,Elevation,430.46,Feet,
+WATER RECOVERY,Recovery Basin,Maximum Water Surface,429.50,Feet,
+WATER RECOVERY,Recovery System,Overflow Weir Crest,427.00,Feet,Both 80 and 160 MGD
+WATER RECOVERY,Recovery High Water,Basin Elevation,410.50,Feet,
+WATER RECOVERY,Recovery Sump,Elevation,408.00,Feet,
+HYDRAULIC DESIGN,At 80 M.G.D.,Water Surface,442.26,Feet,
+HYDRAULIC DESIGN,At 80 M.G.D.,Overflow Crest,427.00,Feet,
+HYDRAULIC DESIGN,At 160 M.G.D.,Water Surface,441.78,Feet,
+HYDRAULIC DESIGN,At 160 M.G.D.,Overflow Crest,427.00,Feet,
+WATER SOURCE,Source 1 - San Antonio,Minimum Elevation,316.00,Feet,MSL Reference
+WATER SOURCE,Source 1 - San Antonio,Field Elevation,468.00,Feet,MSL Reference
+WATER SOURCE,Source 2 - Calaveras,Reservoir Elevation,605.51,Feet,MSL Reference
+WATER SOURCE,Source 2 - Calaveras,Maximum Elevation,752.46,Feet,MSL Reference
+WATER SOURCE,Source 3 - San Antonio,Reservoir Capacity,3500.00,Acre-Feet,
+WATER SOURCE,Source 3 - San Antonio,Maximum Elevation,3806.00,Feet,MSL Reference
+TREATMENT PROCESS,Step 1,Raw Water Intake,65" Diameter,Inches,Main inlet
+TREATMENT PROCESS,Step 2,Rapid Mix/Flocculation,G-Value 2000,s⁻¹,Energy source independent
+TREATMENT PROCESS,Step 3,Sedimentation/Clarification,Multiple Cells,300x200 ft,
+TREATMENT PROCESS,Step 4,Plate Settler System,High Rate Clarification,—,Optional/Included
+TREATMENT PROCESS,Step 5,Filtration,Multiple Cells,300 ft dimension,
+TREATMENT PROCESS,Step 6,Clear Well,Storage,418.92 ft elevation,
+TREATMENT PROCESS,Step 7,Recovery System,Wash Water Recirculation,—,Separate basin
+TREATMENT PROCESS,Step 8,Effluent Discharge,Weir Crest,427.00 ft @ 160 MGD,Final outlet
