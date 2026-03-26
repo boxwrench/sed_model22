@@ -64,6 +64,7 @@ def _format_run_summary(summary: dict) -> str:
         f"Solver status: {solver['solver_status']}",
         f"Mass balance error: {solver['mass_balance_error']:.3e}",
         f"Max velocity: {solver['max_velocity_m_s']:.4f} m/s",
+        "Operator report: operator_report.html",
     ]
     return "\n".join(lines)
 

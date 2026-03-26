@@ -1,4 +1,5 @@
 import io
+import json
 import sys
 from pathlib import Path
 import tempfile
@@ -49,8 +50,20 @@ class CliTests(unittest.TestCase):
             self.assertTrue((run_dir / "mesh.json").exists())
             self.assertTrue((run_dir / "metrics.json").exists())
             self.assertTrue((run_dir / "fields.json").exists())
+            self.assertTrue((run_dir / "operator_report.html").exists())
             self.assertTrue((run_dir / "plots" / "basin_layout.svg").exists())
             self.assertTrue((run_dir / "plots" / "velocity_magnitude.svg").exists())
+
+            report_html = (run_dir / "operator_report.html").read_text(encoding="utf-8")
+            self.assertIn("Technical basis:", report_html)
+            self.assertIn("slow-moving", report_html)
+            self.assertIn("Engineering detail", report_html)
+            self.assertIn("Scope and limits", report_html)
+            self.assertIn("Technical appendix", report_html)
+            self.assertIn("Scenario summary", report_html)
+            self.assertIn("Hydraulic metrics", report_html)
+            self.assertIn("Boundary conditions", report_html)
+            self.assertIn("Baffles", report_html)
 
     def test_summarize_command_reads_run_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -74,6 +87,7 @@ class CliTests(unittest.TestCase):
             output = stdout.getvalue()
             self.assertIn("Detention time:", output)
             self.assertIn("Mass balance error:", output)
+            self.assertIn("Operator report:", output)
 
 
 if __name__ == "__main__":

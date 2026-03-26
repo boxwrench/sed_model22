@@ -11,7 +11,7 @@ from .config import ScenarioConfig, dump_scenario_yaml, load_scenario
 from .mesh import build_structured_mesh
 from .metrics import compute_scenario_metrics
 from .solver import HydraulicFieldData, solve_steady_screening_flow
-from .viz import write_layout_svg, write_velocity_heatmap_svg
+from .viz import write_layout_svg, write_operator_report_html, write_velocity_heatmap_svg
 
 
 class RunArtifacts(BaseModel):
@@ -23,6 +23,7 @@ class RunArtifacts(BaseModel):
     fields_path: str | None = None
     plot_path: str | None = None
     velocity_plot_path: str | None = None
+    operator_report_path: str | None = None
 
 
 def _slugify(text: str) -> str:
@@ -83,6 +84,28 @@ def materialize_run(
             plots_dir / "velocity_magnitude.svg",
         )
 
+    operator_report_path = write_operator_report_html(
+        scenario,
+        summary={
+            "metadata": scenario.metadata.model_dump(mode="json"),
+            "geometry": scenario.geometry.model_dump(mode="json"),
+            "hydraulics": scenario.hydraulics.model_dump(mode="json"),
+            "inlet": scenario.inlet.model_dump(mode="json"),
+            "outlet": scenario.outlet.model_dump(mode="json"),
+            "boundaries": scenario.boundaries.model_dump(mode="json"),
+            "bed": scenario.bed.model_dump(mode="json"),
+            "numerics": scenario.numerics.model_dump(mode="json"),
+            "baffle_count": len(scenario.baffles),
+            "baffles": [baffle.model_dump(mode="json") for baffle in scenario.baffles],
+            "mesh": mesh.model_dump(mode="json"),
+            "metrics": metrics.model_dump(mode="json"),
+            "solver": solver_summary.model_dump(mode="json"),
+        },
+        fields=fields,
+        output_path=run_dir / "operator_report.html",
+        generated_at_utc=timestamp,
+    )
+
     summary = {
         "metadata": scenario.metadata.model_dump(mode="json"),
         "geometry": scenario.geometry.model_dump(mode="json"),
@@ -93,6 +116,7 @@ def materialize_run(
         "bed": scenario.bed.model_dump(mode="json"),
         "numerics": scenario.numerics.model_dump(mode="json"),
         "baffle_count": len(scenario.baffles),
+        "baffles": [baffle.model_dump(mode="json") for baffle in scenario.baffles],
         "mesh": mesh.model_dump(mode="json"),
         "metrics": metrics.model_dump(mode="json"),
         "solver": solver_summary.model_dump(mode="json"),
@@ -109,6 +133,7 @@ def materialize_run(
         "fields_path": str(output_fields_path) if output_fields_path else None,
         "plot_path": str(plot_path) if plot_path else None,
         "velocity_plot_path": str(velocity_plot_path) if velocity_plot_path else None,
+        "operator_report_path": str(operator_report_path),
         "solver_status": solver_summary.solver_status,
     }
     _write_json(manifest_path, manifest)
@@ -122,6 +147,7 @@ def materialize_run(
         fields_path=str(output_fields_path) if output_fields_path else None,
         plot_path=str(plot_path) if plot_path else None,
         velocity_plot_path=str(velocity_plot_path) if velocity_plot_path else None,
+        operator_report_path=str(operator_report_path),
     )
 
 
