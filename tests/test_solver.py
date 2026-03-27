@@ -6,7 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from sed_model22.config import ScenarioConfig, load_scenario  # noqa: E402
+from sed_model22.config import PlanViewScenarioConfig, load_scenario  # noqa: E402
 from sed_model22.mesh import build_structured_mesh  # noqa: E402
 from sed_model22.metrics import compute_scenario_metrics  # noqa: E402
 from sed_model22.solver import solve_steady_screening_flow  # noqa: E402
@@ -39,7 +39,7 @@ class SolverTests(unittest.TestCase):
         self.assertGreater(summary.max_transverse_velocity_m_s, 1.0e-8)
 
     def test_placeholder_baffles_are_ignored_but_do_not_break_solution(self) -> None:
-        scenario = ScenarioConfig.model_validate(
+        scenario = PlanViewScenarioConfig.model_validate(
             {
                 "metadata": {"case_id": "placeholder-case", "title": "Placeholder Case"},
                 "geometry": {"length_m": 40.0, "width_m": 10.0, "water_depth_m": 3.0},

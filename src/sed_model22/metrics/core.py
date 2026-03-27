@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from ..config import ScenarioConfig
+from ..config import PlanViewScenarioConfig
 from ..geometry import basin_area_m2, basin_volume_m3
 
 
@@ -16,7 +16,7 @@ class ScenarioMetrics(BaseModel):
     baffle_count: int
 
 
-def compute_scenario_metrics(scenario: ScenarioConfig) -> ScenarioMetrics:
+def compute_scenario_metrics(scenario: PlanViewScenarioConfig) -> ScenarioMetrics:
     area = basin_area_m2(scenario.geometry)
     volume = basin_volume_m3(scenario.geometry)
     detention_time_s = volume / scenario.hydraulics.flow_rate_m3_s

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from ..config import ScenarioConfig
+from ..config import PlanViewScenarioConfig
 
 
 class MeshSummary(BaseModel):
@@ -13,7 +13,7 @@ class MeshSummary(BaseModel):
     cell_count: int
 
 
-def build_structured_mesh(scenario: ScenarioConfig) -> MeshSummary:
+def build_structured_mesh(scenario: PlanViewScenarioConfig) -> MeshSummary:
     dx_m = scenario.geometry.length_m / scenario.numerics.nx
     dy_m = scenario.geometry.width_m / scenario.numerics.ny
 

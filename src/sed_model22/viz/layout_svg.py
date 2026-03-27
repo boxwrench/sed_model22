@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..config import OpeningConfig, ScenarioConfig
+from ..config import OpeningConfig, PlanViewScenarioConfig
 from ..solver import HydraulicFieldData
 
 
-def build_layout_svg(scenario: ScenarioConfig) -> str:
+def build_layout_svg(scenario: PlanViewScenarioConfig) -> str:
     margin = 40
     basin_width_px = 960
     basin_height_px = max(240, int(basin_width_px * (scenario.geometry.width_m / scenario.geometry.length_m)))
@@ -35,14 +35,14 @@ def build_layout_svg(scenario: ScenarioConfig) -> str:
     )
 
 
-def write_layout_svg(scenario: ScenarioConfig, output_path: str | Path) -> Path:
+def write_layout_svg(scenario: PlanViewScenarioConfig, output_path: str | Path) -> Path:
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(build_layout_svg(scenario), encoding="utf-8")
     return destination
 
 
-def build_velocity_heatmap_svg(scenario: ScenarioConfig, fields: HydraulicFieldData) -> str:
+def build_velocity_heatmap_svg(scenario: PlanViewScenarioConfig, fields: HydraulicFieldData) -> str:
     margin = 40
     basin_width_px = 960
     basin_height_px = max(240, int(basin_width_px * (scenario.geometry.width_m / scenario.geometry.length_m)))
@@ -91,7 +91,7 @@ def build_velocity_heatmap_svg(scenario: ScenarioConfig, fields: HydraulicFieldD
 
 
 def write_velocity_heatmap_svg(
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     fields: HydraulicFieldData,
     output_path: str | Path,
 ) -> Path:
@@ -103,7 +103,7 @@ def write_velocity_heatmap_svg(
 
 def _opening_svg_line(
     opening: OpeningConfig,
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     sx,
     sy,
     *,
@@ -133,7 +133,7 @@ def _opening_svg_line(
     )
 
 
-def _baffle_svg_lines(scenario: ScenarioConfig, sx, sy) -> list[str]:
+def _baffle_svg_lines(scenario: PlanViewScenarioConfig, sx, sy) -> list[str]:
     color_map = {
         "full_depth_solid": "#1f2937",
         "curtain_placeholder": "#2563eb",

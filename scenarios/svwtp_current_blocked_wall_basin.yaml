@@ -1,0 +1,82 @@
+metadata:
+  case_id: svwtp_current_blocked_wall
+  title: SVWTP Current Blocked Wall Basin
+  description: Current-as-built longitudinal screening model with backer boards blocking the transition wall.
+  stage: v0.2
+
+model_form: longitudinal_v0_2
+
+geometry:
+  basin_length_m: 103.63
+  basin_width_m: 18.29
+  water_depth_m: 3.35
+
+hydraulics:
+  flow_rate_m3_s: 1.75
+  temperature_c: 18.0
+
+upstream:
+  inlet_zone_height_m: 1.2
+  inlet_zone_center_elevation_m: 2.6
+  inlet_orifice_count: 8
+  inlet_loss_coefficient: 1.0
+  mixing_zone_length_m: 6.0
+  mixing_intensity_factor: 1.0
+
+features:
+  - kind: perforated_baffle
+    name: transition_wall
+    x_m: 2.0
+    z_bottom_m: 0.0
+    z_top_m: 3.35
+    open_area_fraction: 0.001
+    plate_thickness_m: 0.02
+    loss_scale: 4.0
+  - kind: plate_settler_zone
+    name: plate_zone
+    x_start_m: 70.0
+    x_end_m: 95.0
+    z_bottom_m: 1.9
+    z_top_m: 3.2
+    plate_angle_deg: 60.0
+    plate_spacing_m: 0.05
+    plate_thickness_m: 0.002
+    resistance_scale: 1.0
+    cross_flow_factor: 0.05
+  - kind: launder_zone
+    name: outlet_launder
+    x_start_m: 96.0
+    x_end_m: 103.63
+    z_m: 3.35
+    sink_weight: 1.0
+
+evaluation_stations:
+  - name: post_transition
+    x_m: 8.0
+  - name: plate_inlet
+    x_m: 70.0
+  - name: launder_zone
+    x_m: 100.0
+
+performance_proxies:
+  settling_velocity_thresholds_m_per_s: [0.0005, 0.001, 0.002]
+  dead_zone_velocity_fraction: 0.10
+  tracer_max_time_factor: 4.0
+  tracer_target_fraction: 0.995
+
+numerics:
+  nx: 72
+  nz: 24
+  solver_model: steady_screening_longitudinal
+  eddy_diffusivity_m2_s: 0.001
+  max_iterations: 4000
+  tolerance: 0.000001
+  relaxation_factor: 1.6
+  tracer_cfl: 0.35
+
+outputs:
+  run_root: runs
+  write_layout_svg: true
+  write_velocity_svg: true
+  write_fields_json: true
+  write_tracer_svg: true

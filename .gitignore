@@ -8,4 +8,6 @@ __pycache__/
 build/
 dist/
 runs/
+_cli_test_tmp_*/
+_study_test_tmp_*/
 .DS_Store

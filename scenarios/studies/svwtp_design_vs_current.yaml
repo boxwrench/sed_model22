@@ -1,0 +1,22 @@
+study_id: svwtp_design_vs_current
+title: SVWTP Design vs Current Basin
+description: Compare design-intent and blocked-wall current basin at 3 flows.
+
+cases:
+  - label: design_spec
+    scenario_path: scenarios/svwtp_design_spec_basin.yaml
+  - label: current_blocked
+    scenario_path: scenarios/svwtp_current_blocked_wall_basin.yaml
+
+flows:
+  - label: low
+    flow_rate_m3_s: 0.75
+  - label: typical
+    flow_rate_m3_s: 1.75
+  - label: high
+    flow_rate_m3_s: 2.80
+
+outputs:
+  run_root: runs
+  report_name: comparison_report.md
+  csv_name: comparison_summary.csv

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from ..config import OpeningConfig, ScenarioConfig
+from ..config import OpeningConfig, PlanViewScenarioConfig
 from ..mesh import MeshSummary
 from ..metrics import ScenarioMetrics
 
@@ -38,7 +38,7 @@ class HydraulicFieldData(BaseModel):
 
 
 def solve_steady_screening_flow(
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     mesh: MeshSummary,
     metrics: ScenarioMetrics,
 ) -> tuple[HydraulicsSolutionSummary, HydraulicFieldData]:
@@ -173,7 +173,7 @@ def solve_steady_screening_flow(
     return summary, fields
 
 
-def _initial_head_guess(scenario: ScenarioConfig, mesh: MeshSummary) -> list[list[float]]:
+def _initial_head_guess(scenario: PlanViewScenarioConfig, mesh: MeshSummary) -> list[list[float]]:
     head: list[list[float]] = []
     for i in range(mesh.nx):
         row: list[float] = []
@@ -196,7 +196,7 @@ def _initial_head_guess(scenario: ScenarioConfig, mesh: MeshSummary) -> list[lis
 
 
 def _solve_head_field(
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     mesh: MeshSummary,
     head: list[list[float]],
     inlet_cells: set[tuple[int, int]],
@@ -256,7 +256,7 @@ def _solve_head_field(
 
 
 def _neighbor_contribution(
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     mesh: MeshSummary,
     head: list[list[float]],
     inlet_cells: set[tuple[int, int]],
@@ -305,7 +305,7 @@ def _neighbor_contribution(
 
 
 def _boundary_value_for_face(
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     inlet_cells: set[tuple[int, int]],
     outlet_cells: set[tuple[int, int]],
     side: str,
@@ -347,7 +347,7 @@ def _intervals_overlap(a0: float, a1: float, b0: float, b1: float) -> bool:
 
 
 def _build_blocked_faces(
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     mesh: MeshSummary,
 ) -> tuple[list[list[bool]], list[list[bool]], list[str]]:
     x_blocked = [[False for _ in range(mesh.ny)] for _ in range(mesh.nx - 1)]
@@ -413,7 +413,7 @@ def _boundary_discharge_per_depth(
 
 
 def _cell_face_fluxes(
-    scenario: ScenarioConfig,
+    scenario: PlanViewScenarioConfig,
     mesh: MeshSummary,
     head: list[list[float]],
     inlet_cells: set[tuple[int, int]],

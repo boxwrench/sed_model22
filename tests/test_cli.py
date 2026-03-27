@@ -1,10 +1,10 @@
 import io
-import json
+import shutil
 import sys
 from pathlib import Path
-import tempfile
 import unittest
 from contextlib import redirect_stdout
+from uuid import uuid4
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,9 +14,15 @@ from sed_model22.cli import main  # noqa: E402
 
 
 SCENARIO_PATH = ROOT / "scenarios" / "baseline_rectangular_basin.yaml"
+LONGITUDINAL_SCENARIO_PATH = ROOT / "scenarios" / "svwtp_design_spec_basin.yaml"
 
 
 class CliTests(unittest.TestCase):
+    def _scratch_dir(self) -> Path:
+        path = ROOT / f"_cli_test_tmp_{uuid4().hex}"
+        path.mkdir(parents=True, exist_ok=False)
+        return path
+
     def test_validate_command(self) -> None:
         stdout = io.StringIO()
         with redirect_stdout(stdout):
@@ -26,8 +32,10 @@ class CliTests(unittest.TestCase):
         self.assertIn("Validated scenario 'baseline_rectangular_basin'", stdout.getvalue())
 
     def test_run_hydraulics_creates_artifacts(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            run_root = Path(tmpdir) / "runs"
+        scratch = self._scratch_dir()
+        run_dir: Path | None = None
+        try:
+            run_root = scratch / "runs"
             stdout = io.StringIO()
 
             with redirect_stdout(stdout):
@@ -53,7 +61,6 @@ class CliTests(unittest.TestCase):
             self.assertTrue((run_dir / "operator_report.html").exists())
             self.assertTrue((run_dir / "plots" / "basin_layout.svg").exists())
             self.assertTrue((run_dir / "plots" / "velocity_magnitude.svg").exists())
-
             report_html = (run_dir / "operator_report.html").read_text(encoding="utf-8")
             self.assertIn("Technical basis:", report_html)
             self.assertIn("slow-moving", report_html)
@@ -64,10 +71,13 @@ class CliTests(unittest.TestCase):
             self.assertIn("Hydraulic metrics", report_html)
             self.assertIn("Boundary conditions", report_html)
             self.assertIn("Baffles", report_html)
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
 
     def test_summarize_command_reads_run_artifacts(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            run_root = Path(tmpdir) / "runs"
+        scratch = self._scratch_dir()
+        try:
+            run_root = scratch / "runs"
             run_exit_code = main(
                 [
                     "run-hydraulics",
@@ -88,6 +98,40 @@ class CliTests(unittest.TestCase):
             self.assertIn("Detention time:", output)
             self.assertIn("Mass balance error:", output)
             self.assertIn("Operator report:", output)
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
+
+    def test_longitudinal_run_and_summarize_use_rtd_proxy_language(self) -> None:
+        scratch = self._scratch_dir()
+        try:
+            run_root = scratch / "runs"
+            stdout = io.StringIO()
+
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        "run-hydraulics",
+                        str(LONGITUDINAL_SCENARIO_PATH),
+                        "--run-root",
+                        str(run_root),
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            run_dir = next(run_root.iterdir())
+            self.assertTrue((run_dir / "tracer.json").exists())
+            self.assertTrue((run_dir / "plots" / "tracer_breakthrough.svg").exists())
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(["summarize", str(run_dir)])
+
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("RTD proxy model:", output)
+            self.assertIn("RTD proxy breakthrough:", output)
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
 
 
 if __name__ == "__main__":

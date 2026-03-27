@@ -10,7 +10,9 @@ The repo is now past pure scaffolding. The active build state is:
 - scenario schema expanded for explicit boundaries and solver controls
 - first real screening-flow hydraulic solver in place
 - run artifacts and SVG outputs working
-- verification status: 10 passing tests at the latest checkpoint
+- V0.2 product direction locked around design-versus-current basin comparison
+- detailed V0.2 executor-facing handoff documented
+- verification status: 10 passing tests at the latest code checkpoint
 
 ## Start Here
 
@@ -19,6 +21,9 @@ The repo is now past pure scaffolding. The active build state is:
   - what changed, why it changed, and what comes next
 - `IMPLEMENTATION_PLAN.md`
   - the persistent milestone checklist and pickup queue
+- `V0_2_IMPLEMENTATION_HANDOFF.md`
+  - the detailed V0.2 implementation spec
+  - the current best single document for the next coding push
 - `research/CANON.md`
   - the implementation-facing synthesis for V0.1
 - `architecture/repo-structure.md`
@@ -33,6 +38,7 @@ The repo is now past pure scaffolding. The active build state is:
 | Path | Purpose |
 | --- | --- |
 | `IMPLEMENTATION_PLAN.md` | Active milestone checklist and session restart guide |
+| `V0_2_IMPLEMENTATION_HANDOFF.md` | Detailed V0.2 implementation spec and progress checklist |
 | `architecture/` | Canonical project decisions and implementation-facing structure |
 | `research/CANON.md` | Current build-stage implementation basis |
 | `research/PRIMER.md` | Annotated guide to the research corpus |
@@ -42,11 +48,12 @@ The repo is now past pure scaffolding. The active build state is:
 
 1. `research/PRIMER.md`
 2. `research/CANON.md`
-3. `research/source-notes/sed_floc_basin_simulator_master_package.md`
-4. `research/source-notes/2D hydraulic simulator.md`
-5. `IMPLEMENTATION_PLAN.md`
-6. `architecture/simulation-roadmap.md`
-7. `DEVLOG.md`
+3. `V0_2_IMPLEMENTATION_HANDOFF.md`
+4. `research/source-notes/sed_floc_basin_simulator_master_package.md`
+5. `research/source-notes/2D hydraulic simulator.md`
+6. `IMPLEMENTATION_PLAN.md`
+7. `architecture/simulation-roadmap.md`
+8. `DEVLOG.md`
 
 ## Resume Here
 

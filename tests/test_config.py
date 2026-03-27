@@ -8,7 +8,7 @@ from pydantic import ValidationError
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from sed_model22.config import ScenarioConfig, load_scenario  # noqa: E402
+from sed_model22.config import PlanViewScenarioConfig, load_scenario  # noqa: E402
 
 
 SCENARIO_PATH = ROOT / "scenarios" / "baseline_rectangular_basin.yaml"
@@ -38,7 +38,7 @@ class ScenarioConfigTests(unittest.TestCase):
         }
 
         with self.assertRaises(ValidationError):
-            ScenarioConfig.model_validate(invalid_payload)
+            PlanViewScenarioConfig.model_validate(invalid_payload)
 
     def test_non_opposite_inlet_and_outlet_fail_validation(self) -> None:
         invalid_payload = {
@@ -55,7 +55,7 @@ class ScenarioConfigTests(unittest.TestCase):
         }
 
         with self.assertRaises(ValidationError):
-            ScenarioConfig.model_validate(invalid_payload)
+            PlanViewScenarioConfig.model_validate(invalid_payload)
 
 
 if __name__ == "__main__":

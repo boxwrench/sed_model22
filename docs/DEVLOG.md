@@ -2,6 +2,66 @@
 
 This log is meant to stay short, chronological, and implementation-facing. Each entry should capture the repo state change, the reason for it, and the next immediate move.
 
+## 2026-03-27
+
+### V0.2 Product Direction and Handoff
+
+What changed:
+
+- locked the repo's next major target as a practical design-spec versus current-state basin comparison workflow
+- defined the concrete first question around the blocked perforated transition wall and its hydraulic consequences
+- added `docs/V0_2_IMPLEMENTATION_HANDOFF.md` as the explicit executor-facing V0.2 implementation spec
+- updated the project README and docs language to describe the work as a practical decision-support tool, not just a solver experiment
+- made the repo narrative more legible for operators, engineers, and non-specialist decision-makers while keeping the technical implementation boundary explicit
+
+Why:
+
+- the project has moved past proof-of-concept curiosity and now has a real plant-facing question to answer
+- the next implementation step needed to be framed around a decision-useful product, not only around solver fidelity
+- the repo documentation needed to communicate both practical usefulness and long-term ambition without turning into marketing language
+
+Verification:
+
+- docs update only
+- no code tests run for this entry
+
+Next:
+
+- generate a targeted research memo on perforated-baffle and plate-settler modeling fidelity
+- execute the V0.2 handoff in code
+- keep the implementation practical, legible, and useful to operations while preserving technical honesty
+
+### Research Review: Keep Current V0.2 Boundary
+
+What changed:
+
+- reviewed and archived the research memo at `docs/research/PERFORATED_BAFFLE_AND_PLATE_SETTLER_MODELING_MEMO.md`
+- recorded that the memo is informative for future fidelity decisions but does not change the current `v0.2` proof-of-concept pass
+- captured the important plant note that the blocked-wall current state still allows flow through a serpentine over-under path
+
+Why:
+
+- the research is useful, but the current pass is primarily about proving the workflow and decision-support procedure
+- jumping to a 3D CFD-first approach would break the intended speed, scope, and transparency boundary for the current build
+- future versions need a more exact current-state geometry and bypass-path representation than the current proof-of-concept requires
+
+Verification:
+
+- docs update only
+- no code tests run for this entry
+
+Current interpretation:
+
+- keep `v0.2` as the current low-fidelity comparison workflow
+- use the research memo to guide later fidelity upgrades, not to reset the present milestone
+- treat explicit orifice geometry, exact dimensions, and full bypass-path reconstruction as later-version work
+
+Next:
+
+- finish stabilizing the current `v0.2` implementation
+- capture the real current-state over-under flow path and wall details for a later geometry-verification pass
+- decide later whether the next fidelity jump is explicit orifice geometry, stronger porous-zone calibration, or field validation first
+
 ## 2026-03-25
 
 ### V0.1 Screening Solver Checkpoint

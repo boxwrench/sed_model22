@@ -1,10 +1,10 @@
 # sed_model22
 
-`sed_model22` is an operator-centered basin simulation project scaffold for rectangular sedimentation and flocculation basins. This repository now has a clean separation between source material, architecture docs, scenarios, and the Python package that will carry the V0.1 hydraulic simulator forward.
+`sed_model22` is an operator-centered basin simulation project for practical comparison of rectangular sedimentation and flocculation basin behavior. The near-term goal is to help plant staff compare what a basin was designed to do versus what it is doing now in a way that is technically honest, operationally legible, and useful for real decisions. Long term, if the approach proves credible, it should become a transparent basin-screening workflow that can be useful beyond one plant and eventually useful across a broader agency or industry context.
 
 ## Current Focus
 
-The current implementation is a working V0.1 screening-solver baseline:
+The current implementation is a working V0.1 proof-of-concept baseline:
 
 - research material preserved under `docs/research/`
 - canonical project docs under `docs/architecture/`
@@ -15,14 +15,25 @@ The current implementation is a working V0.1 screening-solver baseline:
 
 The current `run-hydraulics` command validates a scenario, solves a steady screening-flow field on a structured grid, and writes a reproducible run bundle with field outputs and SVG plots. It is intentionally not full CFD, tracer transport, or solids transport yet.
 
+## Product Direction
+
+The next product step is not a generic solver upgrade for its own sake. It is a practical design-vs-current comparison workflow aimed at a real plant question:
+
+- what did the blocked perforated transition wall change hydraulically
+- how does the current basin differ from the design-intent basin
+- are there visible changes in redistribution, short-circuiting risk, plate-settler approach conditions, or launder/upwelling risk
+
+The tool should stay understandable to operators, engineers, and non-specialist decision-makers. The target is not physics-perfect modeling. The target is a transparent model that is good enough to change or support a real engineering decision.
+
 ## Current Status
 
-As of 2026-03-25, the repo is at a usable first-solver checkpoint:
+As of 2026-03-27, the repo is at a usable first-solver checkpoint with a defined V0.2 product direction:
 
 - schema and scenario structure are explicit enough for real hydraulic runs
 - `run-hydraulics` produces `summary.json`, `mesh.json`, `metrics.json`, and `fields.json`
 - plot outputs include basin layout and velocity magnitude SVGs
 - verification coverage includes schema validation, CLI wiring, empty-basin behavior, and a baffle case
+- the next major implementation target is a longitudinal design-vs-current comparison workflow
 
 Current supported solver boundary:
 
@@ -48,6 +59,7 @@ Start with these:
 - `docs/README.md` for the docs hub
 - `docs/DEVLOG.md` for project progress
 - `docs/IMPLEMENTATION_PLAN.md` for milestone status and pickup tasks
+- `docs/V0_2_IMPLEMENTATION_HANDOFF.md` for the detailed executor-facing V0.2 spec
 - `docs/research/CANON.md` for the implementation-facing V0.1 basis
 - `docs/research/PRIMER.md` for the research table of contents and reading guide
 
@@ -76,4 +88,4 @@ sed-model validate scenarios/baseline_rectangular_basin.yaml
 
 ## Immediate Next Step
 
-The next implementation step is to strengthen verification and comparison around the current V0.1 solver: mesh sensitivity checks, additional benchmark cases, and more decision-facing engineering metrics.
+The next implementation step is to execute the V0.2 handoff: add a longitudinal design-vs-current comparison workflow with porous transition-wall modeling, plate-settler zone representation, tracer/RTD proxy outputs, and a study report that is practical enough to discuss with both operators and non-specialist stakeholders.
