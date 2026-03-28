@@ -15,6 +15,11 @@ Project state:
 - research notes are organized and indexed
 - CLI/config/run-artifact workflow exists
 - first real hydraulic screening solve exists
+- repo also now has an early run-bundle media path, voxel still generation, and first-pass preview-video generation
+- the visualization research pass is now in and the first accepted animation direction is deterministic particle pathlines
+- static streamline stills are the accepted report companion
+- detention-based time compression is now an accepted requirement for short basin previews
+- dye-pulse and more elaborate visualization methods remain deferred until their proxy framing is clearly bounded
 
 Current implementation target:
 
@@ -26,7 +31,9 @@ Current implementation target:
 Latest verification checkpoint:
 
 - `PYTHONPATH=src python3 -m unittest discover -s tests -v`
-- 10 tests passing as of 2026-03-25
+- media and CLI subsets were rechecked during preview-animation work on 2026-03-27:
+  - `python -m unittest tests.test_media -v`
+  - `python -m unittest tests.test_cli -v`
 
 ## Milestones
 
@@ -139,11 +146,12 @@ Tasks:
 
 If work resumes after a break, do these next in order:
 
-1. Add mesh sensitivity smoke checks against the current V0.1 solver.
-2. Add more comparison-oriented engineering metrics and scenario summaries.
-3. Add a simple baseline-vs-alternative comparison workflow.
-4. Decide whether the next fidelity jump is tracer transport or stronger hydraulic realism.
-5. Keep `docs/research/CANON.md` aligned with whatever the next solver boundary becomes.
+1. Build or refine better test models chosen for hydraulic and visualization legibility, not just basic solver coverage.
+2. Refine the accepted particle-pathline preview with detention-based time compression, better seeding, and cleaner presentation styling.
+3. Keep static streamline still export aligned as the paired report-facing figure.
+4. Add mesh sensitivity smoke checks against the current V0.1 solver.
+5. Add more comparison-oriented engineering metrics and scenario summaries.
+6. Keep `docs/research/CANON.md` aligned with whatever the next solver boundary becomes.
 
 ## Session Restart Checklist
 

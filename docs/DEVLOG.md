@@ -4,6 +4,218 @@ This log is meant to stay short, chronological, and implementation-facing. Each 
 
 ## 2026-03-27
 
+### Pathline Preview Acceptance: Use Detention-Scale Time Compression
+
+What changed:
+
+- implemented a first real `v0.1` particle-pathline preview path in the normal media workflow
+- added static plan-view streamline SVG output as the paired report-facing still
+- tested the first preview in a near-real-time-style stepping mode and confirmed that it was misleadingly sparse for basin-scale interpretation
+- reran the preview using compressed model time based on detention-scale duration and got a materially more useful result
+- confirmed that the preview becomes decision-useful only when the animation shows basin-scale travel time rather than near-real-time drift
+
+Why:
+
+- the solver and metrics already report detention-scale basin timing, so the preview layer should use that information
+- a short animation cannot communicate a several-hour basin story unless model time is compressed aggressively
+- the operator-facing question is about routing and circulation pattern, not about visually simulating real-time water motion
+
+Verification:
+
+- `python -m unittest tests.test_media -v` passed
+- `python -m unittest tests.test_cli -v` passed
+- rendered a `2x` detention-time baseline preview that showed materially better basin routing intuition than the earlier near-real-time attempt
+
+Current interpretation:
+
+- deterministic particle pathlines are now an accepted prototype direction, not just a research recommendation
+- detention-based time compression is a hard design rule for short basin previews
+- streamline stills remain the stronger static companion figure and should stay paired with the preview path
+
+Next:
+
+- refine seeding, trail density, and guide-path styling against one or two especially legible cases
+- write the follow-on spec from the corrected prototype, not from the earlier near-real-time miss
+- keep honesty text explicit: compressed model time, steady field, directional screening output
+
+### Visualization Research Decision Locked
+
+What changed:
+
+- reviewed the new visualization research memos and recorded a repo-facing synthesis
+- filed the incoming memos under `docs/research/source-notes/` with topic-specific names
+- locked the near-term visualization decision:
+  - deterministic particle pathlines are the first animation method
+  - static streamline stills are the report-facing companion output
+  - dye-pulse style visualization remains deferred for now
+
+Why:
+
+- both research passes converged on particle pathlines as the strongest first method under the repo's current constraints
+- streamline stills remain the most conventional and defensible engineering-facing figure
+- dye-pulse output is still useful later, but it carries more transport-credibility risk than the current repo phase should take on first
+
+Verification:
+
+- docs update only
+- no code tests run for this entry
+
+Current interpretation:
+
+- the next visualization coding pass should be tightly bounded
+- do not continue broad voxel or preview experimentation first
+- build one good particle-pathline preview path and one good streamline-still path before considering more elaborate methods
+
+Next:
+
+- write the small implementation spec for the first particle-pathline plus streamline pass
+- pick one or two visually legible test cases for that pass
+- keep honesty labels explicit and avoid visual effects that imply turbulence or transient CFD
+
+### Preview Animation Reset and Research Handoff
+
+What changed:
+
+- replaced the earlier SVG-card slideshow dependency with a direct frame-rendered preview path that writes low-resolution preview frames and stitches them with `ffmpeg`
+- added a guarded preview-render path with simple runtime selection, timeout monitoring, and frame-count safety limits
+- tested two `v0.1` plan-view motion-first preview directions:
+  - the existing `alternative_three_baffle_basin` case
+  - a new preview-only scenario `scenarios/preview_three_baffle_high_energy.yaml`
+- confirmed that the current point-particle animation style is technically functional but visually unconvincing for the basin problem
+- recorded that the next correct step is research on better visualization primitives, not more local tuning of the current particle renderer
+- recorded that better test models are now the more practical near-term need than more visualization styling work
+
+Why:
+
+- the direct frame-render path removes the immediate `CairoSVG` bottleneck and proves that the repo can generate real preview videos inside the current Python + `ffmpeg` workflow
+- the resulting motion still does not read like hydraulically legible water behavior; it reads as synthetic particles over a static field
+- that means the current blocker is no longer only tooling. It is representation choice
+- the repo needs better test models and a more deliberate visualization-method choice before more animation implementation time is spent
+
+Verification:
+
+- `python -m unittest tests.test_media -v` passed
+- `python -m unittest tests.test_cli -v` passed
+- rendered visual-only plan-view previews under:
+  - `_preview_three_baffle/`
+  - `_preview_high_energy/`
+
+Current interpretation:
+
+- the repo can now generate deterministic low-resolution preview videos without relying on SVG rasterization
+- the current `v0.1` particle-motion preview is not the right final visual language for basin flow communication
+- voxel stills remain useful for geometry/report explanation, but not yet sufficient as the answer for animated flow behavior
+- future visualization work should be driven by a short research pass on animation primitives and by better test-model selection
+
+Next:
+
+- perform the visualization research pass before implementing more animation styles
+- improve or add test scenarios specifically chosen for visual legibility and hydraulic interpretation
+- return to animation only after selecting a more defensible visualization primitive than the current particle overlay
+- treat future voxel work mainly as a geometry/explanation layer unless later testing proves it can carry more of the flow-story honestly
+
+### Run-Bundle Media Integration
+
+What changed:
+
+- integrated voxel media into the normal `run-hydraulics` workflow so run bundles now write `media/voxel_isometric.svg` by default
+- added a run-media policy switch with `off`, `still_only`, `best_effort_preview`, and `require_preview`
+- kept the current default at `best_effort_preview` so preview generation is attempted for the current single-user phase but never allowed to fail the basin run
+- added a narrow internal media pipeline for template-driven stills, comparison pages, manifests, and preview-scene assembly
+- generated a real `v0.2` run-media bundle and a template-driven `design_spec` vs `current_blocked` comparison artifact for review
+
+Why:
+
+- the repo now has enough output structure that voxel media should stop being a detached proof of concept and start becoming part of the normal run workflow
+- the current phase still benefits from automatically attempting richer media output, but the hydraulic run must remain the primary artifact
+- the next animation session needs a clean handoff: stable still output, known preview skeleton, and a precise statement of the current blocker
+
+Verification:
+
+- `PYTHONPATH=src python -m unittest discover -s tests -v` passed with 28 tests
+- real run-media artifact generated at `runs/media_review/20260327T233109Z_svwtp-current-blocked-wall/`
+- template-driven comparison artifact generated at `visualizations/_generated/v0_2_design_vs_current_report_review/`
+
+Current interpretation:
+
+- voxel stills are now part of the normal run-bundle workflow
+- preview animation is still best-effort and currently skips `.mp4` generation when SVG rasterization is unavailable
+- `ffmpeg` was found on the current machine, so the present blocker is not video stitching; it is the SVG-to-PNG rasterization step
+- study-level comparison media is still template-driven rather than automatically attached to `compare-study`
+
+Next:
+
+- start the next session with animation work, not more voxel styling
+- decide whether to install/use `CairoSVG` for the current SVG-based preview path or to move the preview frames to direct PNG generation
+- once preview rasterization is resolved, wire the first report-facing comparison animation into the study workflow
+
+### Voxel Visualization Proof of Concept
+
+What changed:
+
+- added first-pass voxel-style `2.5D` isometric visualizations for both the `v0.2` design-vs-current comparison and the original `v0.1` test pair
+- confirmed that the visual format is useful as a proof of concept for communicating basin differences in a more legible way than tables alone
+- recorded that this format is a desired future report output, but is not yet part of the standard repo output set
+- recorded that no further visualization changes should be made until the next round of test data is available
+- recorded that future visualization work should aim to resemble the real basin more closely, not just a generic extruded grid
+
+Why:
+
+- the comparison views proved useful for quickly reading design-vs-current differences and for checking whether the same visual language still works on the earlier `v0.1` cases
+- the project now has evidence that a report-ready visual output can be both practical and transparent without pretending the current solver is already a full `3D` model
+- the next meaningful design step depends on the next set of tests and data, not on additional presentational iteration alone
+
+Verification:
+
+- `PYTHONPATH=src python -m unittest discover -s tests -v` passed with 25 tests
+- generated comparison artifacts under `visualizations/` for both `v0.2` and the original `v0.1` test pair
+
+Current interpretation:
+
+- keep the voxel/isometric format as a promising report-output direction
+- do not treat it as a standard output artifact yet
+- hold off on more visual refinement until the next test/data pass is available
+- when the format returns, push it toward a closer resemblance to the real basin geometry and features
+
+Next:
+
+- gather the next set of test data
+- revisit the visualization once there is better geometry or higher-confidence output worth presenting
+- aim for a future report visual that looks recognizably like the real basin while staying explicit about model limitations
+
+### Study Reporting Lesson: Separate Directional Signal from Literal Values
+
+What changed:
+
+- reran the shipped `svwtp_design_vs_current` study and reviewed the generated comparison outputs
+- tightened study reporting so it now carries explicit screening cautions when solver credibility is weak or metrics are non-discriminating
+- recorded that mixed RTD timing shifts must be reported explicitly instead of being collapsed into a single "earlier" or "later" statement
+- recorded that large solver discharge mismatch means absolute velocity-derived `m/s` values are not field-credible, even when directional differences may still be useful
+- recorded that saturated settling-threshold exceedance metrics should be called out as non-discriminating instead of being left to imply more meaning than they carry
+
+Why:
+
+- the first real design-vs-current study produced a useful directional signal, but some absolute velocity metrics were clearly not safe to present as literal predicted values
+- subsequent studies need a repeatable rule for distinguishing decision-useful comparison signal from proxy-only outputs
+- the current basin question is especially sensitive to this because the real current state still has an over-under serpentine bypass path that the present proof-of-concept model does not represent explicitly
+
+Verification:
+
+- `PYTHONPATH=src python -m unittest discover -s tests -v` passed with 22 tests
+- `PYTHONPATH=src python -m sed_model22 compare-study scenarios/studies/svwtp_design_vs_current.yaml` produced an updated comparison report with explicit cautions
+
+Current interpretation:
+
+- keep using `v0.2` for practical screening comparisons
+- report comparison direction and metric credibility together, not as separate concerns
+- treat extreme absolute velocities as proxy outputs when solver mismatch is large
+- treat saturated metrics as present-but-not-informative for the current study
+
+Next:
+
+- document the study-reporting rules in the handoff so later work does not repeat the same overstatement risk
+- decide whether the next solver-focused pass should target discharge-scaling/metric interpretation, explicit serpentine bypass representation, or both
+
 ### V0.2 Product Direction and Handoff
 
 What changed:

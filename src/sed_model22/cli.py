@@ -20,6 +20,7 @@ from .viz import (
     write_longitudinal_layout_svg,
     write_longitudinal_tracer_breakthrough_svg,
     write_longitudinal_velocity_heatmap_svg,
+    write_plan_view_streamline_svg,
     write_velocity_heatmap_svg,
 )
 
@@ -47,6 +48,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--flow-rate-m3-s",
         type=float,
         help="Override the scenario flow rate without rewriting the YAML file.",
+    )
+    run_parser.add_argument(
+        "--media-policy",
+        choices=["off", "still_only", "best_effort_preview", "require_preview"],
+        default="best_effort_preview",
+        help="Control voxel and preview generation for the run bundle.",
     )
 
     summarize_parser = subparsers.add_parser("summarize", help="Print a concise run summary.")
@@ -157,8 +164,15 @@ def main(argv: list[str] | None = None) -> int:
                 scenario=scenario,
                 run_root_override=args.run_root,
                 flow_rate_m3_s=args.flow_rate_m3_s,
+                media_policy=args.media_policy,
             )
             print(f"Created hydraulic run at {artifacts.run_dir}")
+            if artifacts.voxel_plot_path:
+                print(f"Voxel still: {artifacts.voxel_plot_path}")
+            if artifacts.preview_video_path:
+                print(f"Preview video: {artifacts.preview_video_path}")
+            elif artifacts.media_manifest_path:
+                print(f"Media manifest: {artifacts.media_manifest_path}")
             return 0
 
         if args.command == "summarize":
@@ -217,6 +231,12 @@ def main(argv: list[str] | None = None) -> int:
                     plots_dir / "velocity_magnitude.svg",
                 )
                 print(f"Wrote velocity SVG to {velocity_path}")
+                streamline_path = write_plan_view_streamline_svg(
+                    scenario,
+                    fields,
+                    plots_dir / "streamlines.svg",
+                )
+                print(f"Wrote streamline SVG to {streamline_path}")
             return 0
 
         if args.command == "compare-study":

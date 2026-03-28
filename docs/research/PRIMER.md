@@ -160,6 +160,16 @@ Distinct contributions in this cluster:
 | `source-notes/Critical Review_ Flocculation and Settling Dynamics Beyond Classical Discrete Particle Assumptions (1).docx` | External-format research draft | Convert or summarize later if it becomes a primary reference |
 | `source-notes/Minimum-Fidelity Modeling for Rectangular Sedimentation and Flocculation Basin Optimization_ A Technical Roadmap for Practitioner Implementation.docx` | External-format roadmap draft | Convert or summarize later if it becomes a primary reference |
 | `source-notes/Operational Modeling Framework for Large-Scale Sedimentation and Flocculation Basins.pdf` | PDF companion to the markdown note | Use only if the markdown is missing needed detail |
+| `source-notes/visualization_methods_for_sed_model22_decision_memo.docx` | Visualization-method decision memo | Use when deciding what preview/report visualization to build next |
+| `source-notes/visualization_methods_for_sed_model22_candidate_methods_memo.md` | Detailed candidate-method comparison and implementation memo | Use when comparing particle, dye, streamline, LIC, voxel, and future `3D` options |
+
+### Visualization Research
+
+| File | What it gives you | Best use |
+| --- | --- | --- |
+| `VISUALIZATION_METHODS_REVIEW_NOTES.md` | Repo-facing synthesis of the new visualization research | Use first when deciding the next visualization step |
+| `source-notes/visualization_methods_for_sed_model22_decision_memo.docx` | Structured decision memo prioritizing particle pathlines | Use when you want the shorter decision-oriented version |
+| `source-notes/visualization_methods_for_sed_model22_candidate_methods_memo.md` | Longer comparative memo with implementation and honesty analysis | Use when you need the deeper tradeoff table and future-method framing |
 
 ## Suggested Working Set for This Repo
 

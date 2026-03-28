@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SVWTP v0.2 Design vs Current 2.5D Isometric Comparison</title>
+  <style>
+    :root {
+      --bg: #f4f8fb;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #d7e2ee;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(180deg, #eff6ff 0%, var(--bg) 55%, #eef2f7 100%); color: var(--ink); font-family: Consolas, "SFMono-Regular", monospace; }
+    .wrap { max-width: 1760px; margin: 0 auto; padding: 28px; }
+    h1 { margin: 0 0 10px; font-size: 32px; }
+    .subtitle { margin: 0 0 22px; font-size: 16px; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08); }
+    .label { margin: 0 0 10px; font-size: 18px; font-weight: 700; }
+    img { width: 100%; height: auto; display: block; border-radius: 12px; background: #fff; }
+    .footer { margin-top: 18px; padding: 16px 18px; background: rgba(255,255,255,0.8); border: 1px solid var(--line); border-radius: 16px; color: var(--muted); }
+    .footer p { margin: 6px 0; }
+    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>SVWTP v0.2 Design vs Current 2.5D Isometric Comparison</h1>
+    <p class="subtitle">Side-by-side review of the current longitudinal screening views. These are 2.5D presentation renders of 2D fields, not full 3D simulations.</p>
+    <div class="grid">
+      <section class="card">
+        <h2 class="label">Design Spec</h2>
+        <img src="v0_2_design_spec_voxel_isometric.svg" alt="Design Spec">
+      </section>
+      <section class="card">
+        <h2 class="label">Current Blocked Wall</h2>
+        <img src="v0_2_current_blocked_voxel_isometric.svg" alt="Current Blocked Wall">
+      </section>
+    </div>
+    <section class="footer"><p>Use this pair to compare qualitative redistribution, wall effect, plate-settler approach pattern, and launder-proxy differences.</p><p>The display remains screening-oriented: transparent voxels show run-normalized relative speed bands rather than field-credible absolute m/s values.</p></section>
+  </div>
+</body>
+</html>

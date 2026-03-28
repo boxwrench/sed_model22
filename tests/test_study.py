@@ -66,13 +66,57 @@ class StudyTests(unittest.TestCase):
                 {"design_spec", "current_blocked"},
             )
 
-            manifest_paths = list((study_dir / "runs").rglob("manifest.json"))
-            self.assertEqual(len(manifest_paths), 6)
+            run_manifest_paths = [
+                path for path in (study_dir / "runs").rglob("manifest.json") if path.parent.name != "media"
+            ]
+            media_manifest_paths = [
+                path for path in (study_dir / "runs").rglob("manifest.json") if path.parent.name == "media"
+            ]
+            self.assertEqual(len(run_manifest_paths), 6)
+            self.assertEqual(len(media_manifest_paths), 0)
 
             report_text = report_path.read_text(encoding="utf-8")
             self.assertIn("current_blocked - design_spec", report_text)
             self.assertIn("Transition headloss", report_text)
-            self.assertIn("RTD proxy breakthrough", report_text)
+            self.assertIn("RTD proxy timing shifts", report_text)
+            self.assertIn("Screening cautions:", report_text)
+            self.assertIn("absolute velocity-derived m/s values are not field-credible", report_text)
+            self.assertIn("Settling-threshold exceedance is saturated", report_text)
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_compare_study_report_uses_generic_case_labels(self) -> None:
+        temp_dir = ROOT / f"_study_test_tmp_{uuid4().hex}"
+        try:
+            temp_dir.mkdir(parents=True, exist_ok=False)
+            run_root = temp_dir / "runs"
+            study_payload = yaml.safe_load(STUDY_PATH.read_text(encoding="utf-8"))
+            study_payload["cases"][0]["label"] = "design_case"
+            study_payload["cases"][1]["label"] = "blocked_case"
+            for case in study_payload["cases"]:
+                case["scenario_path"] = str((ROOT / case["scenario_path"]).resolve())
+            study_payload["outputs"]["run_root"] = str(run_root)
+            temp_study_path = temp_dir / "study.yaml"
+            temp_study_path.write_text(yaml.safe_dump(study_payload, sort_keys=False), encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(["compare-study", str(temp_study_path)])
+
+            self.assertEqual(exit_code, 0)
+
+            study_dir = next(run_root.iterdir())
+            report_path = study_dir / "comparison_report.md"
+            report_text = report_path.read_text(encoding="utf-8")
+
+            self.assertIn("blocked_case - design_case", report_text)
+            self.assertIn("| Metric | design_case | blocked_case | delta (blocked_case - design_case) |", report_text)
+            self.assertIn("relative to `design_case`", report_text)
+            self.assertIn("t10", report_text)
+            self.assertIn("t50", report_text)
+            self.assertIn("t90", report_text)
+            self.assertIn("Screening cautions:", report_text)
+            self.assertNotIn("No comparison pairs were found", report_text)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 

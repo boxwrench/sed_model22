@@ -10,4 +10,6 @@ dist/
 runs/
 _cli_test_tmp_*/
 _study_test_tmp_*/
+_preview*/
+visualizations/_generated/
 .DS_Store

@@ -10,9 +10,12 @@ The repo is now past pure scaffolding. The active build state is:
 - scenario schema expanded for explicit boundaries and solver controls
 - first real screening-flow hydraulic solver in place
 - run artifacts and SVG outputs working
+- run bundles now include default voxel media output with best-effort preview assembly
+- `v0.1` now has a first accepted particle-pathline preview prototype with paired streamline still output
 - V0.2 product direction locked around design-versus-current basin comparison
 - detailed V0.2 executor-facing handoff documented
-- verification status: 10 passing tests at the latest code checkpoint
+- token-efficient media-output architecture documented under `architecture/media-output-spec.md`
+- verification status: 31 passing tests at the latest code checkpoint
 
 ## Start Here
 
@@ -30,6 +33,8 @@ The repo is now past pure scaffolding. The active build state is:
   - where things belong in the repo
 - `architecture/simulation-roadmap.md`
   - the staged implementation path
+- `architecture/media-output-spec.md`
+  - the token-efficient spec for voxel stills, pathline previews, and paired streamline outputs
 - `research/PRIMER.md`
   - the research table of contents and quick-reference guide
 
@@ -40,6 +45,7 @@ The repo is now past pure scaffolding. The active build state is:
 | `IMPLEMENTATION_PLAN.md` | Active milestone checklist and session restart guide |
 | `V0_2_IMPLEMENTATION_HANDOFF.md` | Detailed V0.2 implementation spec and progress checklist |
 | `architecture/` | Canonical project decisions and implementation-facing structure |
+| `architecture/media-output-spec.md` | Narrow spec for repeatable voxel and preview media outputs |
 | `research/CANON.md` | Current build-stage implementation basis |
 | `research/PRIMER.md` | Annotated guide to the research corpus |
 | `research/source-notes/` | Preserved original notes, source drafts, reports, and reference assets |
@@ -62,3 +68,4 @@ If work resumes after a break, read these in order:
 1. `DEVLOG.md`
 2. `IMPLEMENTATION_PLAN.md`
 3. `research/CANON.md`
+4. `architecture/media-output-spec.md` if the next session is about voxel/report animation work

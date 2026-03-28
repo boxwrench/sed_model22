@@ -59,8 +59,11 @@ class CliTests(unittest.TestCase):
             self.assertTrue((run_dir / "metrics.json").exists())
             self.assertTrue((run_dir / "fields.json").exists())
             self.assertTrue((run_dir / "operator_report.html").exists())
+            self.assertTrue((run_dir / "media" / "voxel_isometric.svg").exists())
+            self.assertTrue((run_dir / "media" / "manifest.json").exists())
             self.assertTrue((run_dir / "plots" / "basin_layout.svg").exists())
             self.assertTrue((run_dir / "plots" / "velocity_magnitude.svg").exists())
+            self.assertTrue((run_dir / "plots" / "streamlines.svg").exists())
             report_html = (run_dir / "operator_report.html").read_text(encoding="utf-8")
             self.assertIn("Technical basis:", report_html)
             self.assertIn("slow-moving", report_html)
@@ -71,6 +74,8 @@ class CliTests(unittest.TestCase):
             self.assertIn("Hydraulic metrics", report_html)
             self.assertIn("Boundary conditions", report_html)
             self.assertIn("Baffles", report_html)
+            output = stdout.getvalue()
+            self.assertIn("Voxel still:", output)
         finally:
             shutil.rmtree(scratch, ignore_errors=True)
 
@@ -121,6 +126,8 @@ class CliTests(unittest.TestCase):
             run_dir = next(run_root.iterdir())
             self.assertTrue((run_dir / "tracer.json").exists())
             self.assertTrue((run_dir / "plots" / "tracer_breakthrough.svg").exists())
+            self.assertTrue((run_dir / "media" / "voxel_isometric.svg").exists())
+            self.assertTrue((run_dir / "media" / "manifest.json").exists())
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):

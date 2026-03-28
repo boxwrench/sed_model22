@@ -4,16 +4,16 @@
 
 ## Current Focus
 
-The current implementation is a working V0.1 proof-of-concept baseline:
+The current implementation now carries two practical screening workflows:
 
 - research material preserved under `docs/research/`
 - canonical project docs under `docs/architecture/`
-- Python package skeleton under `src/sed_model22/`
-- CLI + YAML scenario workflow for early development
-- screening-flow run artifacts for validation, layout generation, and repo smoke tests
-- a first real structured-grid hydraulic screening solve
+- Python package and CLI workflow under `src/sed_model22/`
+- `v0.1` plan-view hydraulic screening for basin-layout and operator-facing checks
+- `v0.2` longitudinal `length x depth` screening for design-vs-current comparison
+- deterministic run artifacts for validation, review, and comparison reporting
 
-The current `run-hydraulics` command validates a scenario, solves a steady screening-flow field on a structured grid, and writes a reproducible run bundle with field outputs and SVG plots. It is intentionally not full CFD, tracer transport, or solids transport yet.
+The current `run-hydraulics` command is model-aware. It validates a scenario, runs either the `v0.1` plan-view or `v0.2` longitudinal screening path, and writes a reproducible run bundle with field outputs, SVG plots, and a voxel-style media bundle. The current `compare-study` command runs case-by-flow comparisons and writes JSON, CSV, and Markdown comparison artifacts. This remains a screening tool, not full CFD, full transient transport, or solids transport.
 
 ## Product Direction
 
@@ -29,19 +29,22 @@ The tool should stay understandable to operators, engineers, and non-specialist 
 
 As of 2026-03-27, the repo is at a usable first-solver checkpoint with a defined V0.2 product direction:
 
-- schema and scenario structure are explicit enough for real hydraulic runs
-- `run-hydraulics` produces `summary.json`, `mesh.json`, `metrics.json`, and `fields.json`
-- plot outputs include basin layout and velocity magnitude SVGs
-- verification coverage includes schema validation, CLI wiring, empty-basin behavior, and a baffle case
-- the next major implementation target is a longitudinal design-vs-current comparison workflow
+- schema and scenario structure support both `v0.1` scenarios and `v0.2` comparison scenarios
+- `run-hydraulics` produces reproducible run bundles for both model forms
+- run bundles now include a default voxel still and best-effort preview-media bundle under `media/`
+- `v0.1` now also includes a first accepted particle-pathline preview prototype plus paired streamline still output
+- `v0.2` outputs include longitudinal fields, RTD proxy artifacts, and comparison-study reporting
+- plot outputs include layout, velocity magnitude, tracer breakthrough, and the existing operator report path for `v0.1`
+- shipped scenarios include an SVWTP design-spec vs blocked-wall study for low, typical, and high flow screening
 
 Current supported solver boundary:
 
 - structured Cartesian grid only
-- opposite-side inlet/outlet pairs only
-- impermeable walls
-- full-depth solid baffles only
-- steady screening-flow solve, not full shallow-water or CFD physics
+- steady deterministic screening-flow solve, not full shallow-water or CFD physics
+- `v0.1`: opposite-side inlet/outlet pairs and full-depth solid baffles only
+- `v0.2`: conductance-based perforated-baffle, plate-settler, and launder proxy representation
+- RTD behavior in `v0.2` is currently a deterministic proxy layer, not explicit transient transport
+- short preview animations may use compressed model time for readability and must label that explicitly
 
 ## Repository Layout
 
@@ -82,10 +85,13 @@ sed-model validate scenarios/baseline_rectangular_basin.yaml
 ## Initial Commands
 
 - `validate <scenario>`: validate YAML against the current scenario schema
-- `run-hydraulics <scenario>`: materialize a hydraulic run directory with mesh, fields, summary, and SVG artifacts
+- `validate-study <study>`: validate a comparison study YAML file
+- `run-hydraulics <scenario>`: materialize a hydraulic run directory with mesh, fields, summary, SVG artifacts, and run media
+- `run-hydraulics --media-policy {off,still_only,best_effort_preview,require_preview}`: control voxel and preview generation; current default is `best_effort_preview`
 - `summarize <run_dir>`: print a concise run summary
 - `plot <run_dir>`: regenerate the layout and velocity SVGs from the run snapshot
+- `compare-study <study>`: run a case-by-flow study and write comparison outputs
 
 ## Immediate Next Step
 
-The next implementation step is to execute the V0.2 handoff: add a longitudinal design-vs-current comparison workflow with porous transition-wall modeling, plate-settler zone representation, tracer/RTD proxy outputs, and a study report that is practical enough to discuss with both operators and non-specialist stakeholders.
+The immediate next step is to keep tightening the practical `v0.2` screening workflow around the real basin question: design-spec versus current-state behavior, especially the hydraulic effect of the blocked transition wall, while staying explicit about what is still a proxy and what belongs in later higher-fidelity versions.

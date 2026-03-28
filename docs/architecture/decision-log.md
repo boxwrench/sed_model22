@@ -25,3 +25,7 @@ The package uses a `src/` layout with stable module boundaries for config, geome
 ### 006. Deferred Physics
 
 Tracer transport, solids transport, density currents, partial-depth baffles, porous baffles, and full CFD/shallow-water fidelity remain explicitly deferred until the current V0.1 solver has stronger verification and comparison support.
+
+### 007. Visualization Method Priority
+
+For the current screening-model phase, the first animation method to pursue is deterministic particle pathlines with fading trails. Static streamline figures remain the preferred report-facing companion output. Dye-pulse style transport visuals remain deferred until their proxy status can be framed clearly enough that they do not imply validated transient transport or higher-fidelity physics than the current model supports.

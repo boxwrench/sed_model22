@@ -762,6 +762,14 @@ Use deterministic column ordering.
 
 `comparison_report.md` must be human-readable and deterministic.
 
+Study-reporting rule for later passes:
+
+- every study must distinguish directional comparison signal from field-credible absolute values
+- if solver credibility is weak for a run, the report must say so explicitly and frame absolute velocity-derived outputs as screening proxies only
+- if a metric is saturated or otherwise non-discriminating across cases, the report must say that directly instead of leaving it to imply false precision
+- if `t10`, `t50`, and `t90` do not move in the same direction, the report must list them separately instead of collapsing RTD behavior into a single earlier/later statement
+- for blocked-path or bypass-path cases, the report must state whether the active bypass path is represented explicitly or remains a known model limitation
+
 Use this structure:
 
 1. title
@@ -769,14 +777,15 @@ Use this structure:
 3. flows
 4. model limitations
 5. per-flow comparison tables
-6. delta summary where delta is:
+6. per-flow screening cautions, when applicable
+7. delta summary where delta is:
    - `current_blocked - design_spec`
-7. interpretation bullets that explicitly state:
+8. interpretation bullets that explicitly state:
    - more or less headloss
    - better or worse uniformity
-   - earlier or later RTD breakthrough
-   - higher or lower launder upwelling risk
-   - higher or lower settling-threshold exceedance
+   - the individual RTD timing shifts for `t10`, `t50`, and `t90`
+   - higher or lower launder upwelling proxy
+   - higher or lower settling-threshold exceedance, or that the metric is non-discriminating if saturated
 
 Do not make the report vague. It should say what changed and in which direction.
 

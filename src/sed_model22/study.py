@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import UTC, datetime
 import csv
 import json
@@ -49,6 +48,7 @@ def run_comparison_study(study_path: str | Path) -> ComparisonStudyArtifacts:
                 scenario_path=scenario_path,
                 scenario=scenario,
                 run_root_override=run_root_override,
+                media_policy="off",
             )
             summary = load_summary(artifacts.run_dir)
             row = _comparison_row(
@@ -136,6 +136,10 @@ def _write_comparison_csv(
         "flow_label",
         "flow_rate_m3_s",
         "run_dir",
+        "solver_converged",
+        "solver_mass_balance_error",
+        "solver_max_velocity_m_s",
+        "solver_max_upward_velocity_m_s",
         "basin_area_m2",
         "basin_volume_m3",
         "theoretical_detention_time_s",
@@ -174,6 +178,7 @@ def _write_comparison_report(
     case_order: list[str],
     flow_order: list[str],
 ) -> None:
+    baseline_label, comparison_label = _comparison_labels(case_order)
     lines: list[str] = []
     lines.append(f"# {study.title}")
     if study.description:
@@ -194,6 +199,7 @@ def _write_comparison_report(
             "- This is a deterministic screening model, not a calibrated CFD or hydraulic network solver.",
             "- Transition-wall and plate-settler effects are represented through conductance modifiers, not explicit geometry meshing.",
             "- RTD proxy metrics are derived from the steady longitudinal velocity field, not explicit transient transport.",
+            "- When the solver discharge mismatch diagnostic is large, absolute velocity values should be read as directional screening proxies, not literal field-credible m/s predictions.",
         ]
     )
 
@@ -201,11 +207,16 @@ def _write_comparison_report(
         flow_rows = [row for row in rows if row["flow_label"] == flow_label]
         lines.append("")
         lines.append(f"## Flow: {flow_label}")
-        lines.append(_comparison_table(flow_rows, threshold_columns))
+        lines.append(_comparison_table(flow_rows, threshold_columns, case_order))
+        caution_lines = _flow_cautions(flow_rows, case_order, threshold_columns)
+        if caution_lines:
+            lines.append("")
+            lines.append("Screening cautions:")
+            lines.extend(caution_lines)
 
     lines.append("")
     lines.append("## Delta Summary")
-    lines.append("Deltas are computed as `current_blocked - design_spec`.")
+    lines.append(f"Deltas are computed as `{comparison_label} - {baseline_label}`.")
     lines.append("")
     for flow_label in flow_order:
         delta_rows = _delta_rows_for_flow(rows, flow_label, case_order, threshold_columns)
@@ -219,43 +230,50 @@ def _write_comparison_report(
         if not delta:
             continue
         rows_by_metric = {row["metric_key"]: row for row in delta}
-        lines.append(f"- `{flow_label}` headloss is {_more_less_phrase(rows_by_metric['transition_headloss_m']['delta'])}.")
         lines.append(
-            f"- `{flow_label}` post-transition uniformity is {_better_worse_phrase(rows_by_metric['post_transition_velocity_uniformity_index']['delta'])}."
+            f"- `{flow_label}` transition headloss in `{comparison_label}` is {_more_less_phrase(rows_by_metric['transition_headloss_m']['delta'])} relative to `{baseline_label}`."
         )
         lines.append(
-            f"- `{flow_label}` RTD proxy breakthrough is {_earlier_later_phrase(rows_by_metric['t10_s']['delta'])} based on t10, with t50 and t90 moving in the same direction."
+            f"- `{flow_label}` post-transition uniformity in `{comparison_label}` is {_better_worse_phrase(rows_by_metric['post_transition_velocity_uniformity_index']['delta'])} relative to `{baseline_label}`."
         )
         lines.append(
-            f"- `{flow_label}` launder upwelling risk is {_higher_lower_phrase(rows_by_metric['launder_peak_upward_velocity_m_s']['delta'])}."
+            f"- `{flow_label}` RTD proxy timing shifts are: t10 {_earlier_later_phrase(rows_by_metric['t10_s']['delta'])}, t50 {_earlier_later_phrase(rows_by_metric['t50_s']['delta'])}, and t90 {_earlier_later_phrase(rows_by_metric['t90_s']['delta'])}."
+        )
+        lines.append(
+            f"- `{flow_label}` launder upwelling proxy in `{comparison_label}` is {_higher_lower_phrase(rows_by_metric['launder_peak_upward_velocity_m_s']['delta'])} relative to `{baseline_label}`."
         )
         threshold_summary = ", ".join(
             f"{column.replace('settling_exceedance_', '').replace('_m_per_s', '').replace('_', '.')}: {_higher_lower_phrase(rows_by_metric[column]['delta'])}"
             for column in threshold_columns
         )
-        lines.append(f"- `{flow_label}` settling-threshold exceedance is {threshold_summary}.")
+        lines.append(
+            f"- `{flow_label}` settling-threshold exceedance in `{comparison_label}` is {threshold_summary} relative to `{baseline_label}`."
+        )
 
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def _comparison_table(flow_rows: list[dict[str, object]], threshold_columns: list[str]) -> str:
-    by_case = {row["case_label"]: row for row in flow_rows}
-    design = by_case.get("design_spec")
-    current = by_case.get("current_blocked")
+def _comparison_table(
+    flow_rows: list[dict[str, object]],
+    threshold_columns: list[str],
+    case_order: list[str],
+) -> str:
+    pair = _comparison_pair(flow_rows, case_order)
 
     lines = [
-        "| Metric | design_spec | current_blocked | delta (current - design) |",
+        f"| Metric | {case_order[0]} | {case_order[1]} | delta ({case_order[1]} - {case_order[0]}) |",
         "| --- | ---: | ---: | ---: |",
     ]
-    if design and current:
+    if pair is not None:
+        _, _, baseline, comparison = pair
         for metric in _table_metrics(threshold_columns):
             lines.append(
-                f"| {metric['label']} | {metric_value(design, metric['key'])} | {metric_value(current, metric['key'])} | {delta_value(current, design, metric['key'])} |"
+                f"| {metric['label']} | {metric_value(baseline, metric['key'])} | {metric_value(comparison, metric['key'])} | {delta_value(comparison, baseline, metric['key'])} |"
             )
         for column in threshold_columns:
             label = column.replace("settling_exceedance_", "").replace("_m_per_s", "").replace("_", ".")
             lines.append(
-                f"| Settling exceedance {label} | {metric_value(design, column)} | {metric_value(current, column)} | {delta_value(current, design, column)} |"
+                f"| Settling exceedance {label} | {metric_value(baseline, column)} | {metric_value(comparison, column)} | {delta_value(comparison, baseline, column)} |"
             )
     else:
         lines.append("| No comparison pairs were found | - | - | - |")
@@ -305,15 +323,10 @@ def _delta_rows_for_flow(
     threshold_columns: list[str],
 ) -> list[dict[str, object]]:
     flow_rows = [row for row in rows if row["flow_label"] == flow_label]
-    by_case = {row["case_label"]: row for row in flow_rows}
-    if "design_spec" in by_case and "current_blocked" in by_case:
-        baseline = by_case["design_spec"]
-        comparison = by_case["current_blocked"]
-    elif len(case_order) >= 2 and case_order[0] in by_case and case_order[1] in by_case:
-        baseline = by_case[case_order[0]]
-        comparison = by_case[case_order[1]]
-    else:
+    pair = _comparison_pair(flow_rows, case_order)
+    if pair is None:
         return []
+    _, _, baseline, comparison = pair
 
     rows_out: list[dict[str, object]] = []
     for metric in _table_metrics([]):
@@ -358,12 +371,17 @@ def _comparison_row(
     summary: dict,
 ) -> dict[str, object]:
     metrics = summary["metrics"]
+    solver = summary["solver"]
     row: dict[str, object] = {
         "study_id": study_id,
         "case_label": case_label,
         "flow_label": flow_label,
         "flow_rate_m3_s": flow_rate_m3_s,
         "run_dir": str(run_dir),
+        "solver_converged": solver["converged"],
+        "solver_mass_balance_error": solver["mass_balance_error"],
+        "solver_max_velocity_m_s": solver["max_velocity_m_s"],
+        "solver_max_upward_velocity_m_s": solver["max_upward_velocity_m_s"],
         "basin_area_m2": metrics["basin_area_m2"],
         "basin_volume_m3": metrics["basin_volume_m3"],
         "theoretical_detention_time_s": metrics["theoretical_detention_time_s"],
@@ -403,6 +421,82 @@ def _threshold_columns(rows: list[dict[str, object]]) -> list[str]:
                     keys.append(column)
     keys.sort(key=lambda value: float(value[len("settling_exceedance_") : -len("_m_per_s")].replace("_", ".")))
     return keys
+
+
+def _comparison_labels(case_order: list[str]) -> tuple[str, str]:
+    if len(case_order) < 2:
+        raise ValueError("comparison studies require at least two cases")
+    return case_order[0], case_order[1]
+
+
+def _comparison_pair(
+    flow_rows: list[dict[str, object]],
+    case_order: list[str],
+) -> tuple[str, str, dict[str, object], dict[str, object]] | None:
+    baseline_label, comparison_label = _comparison_labels(case_order)
+    by_case = {row["case_label"]: row for row in flow_rows}
+    if baseline_label not in by_case or comparison_label not in by_case:
+        return None
+    return baseline_label, comparison_label, by_case[baseline_label], by_case[comparison_label]
+
+
+def _flow_cautions(
+    flow_rows: list[dict[str, object]],
+    case_order: list[str],
+    threshold_columns: list[str],
+) -> list[str]:
+    pair = _comparison_pair(flow_rows, case_order)
+    if pair is None:
+        return []
+
+    baseline_label, comparison_label, baseline, comparison = pair
+    cautions: list[str] = []
+
+    for label, row in ((baseline_label, baseline), (comparison_label, comparison)):
+        mass_balance_error = float(row.get("solver_mass_balance_error", 0.0))
+        if mass_balance_error > 0.25:
+            cautions.append(
+                f"- `{label}` solver discharge mismatch diagnostic is {format_number(mass_balance_error)}; absolute velocity-derived m/s values are not field-credible for this run and should be read directionally only."
+            )
+
+    if threshold_columns and _thresholds_are_saturated(baseline, comparison, threshold_columns):
+        cautions.append(
+            "- Settling-threshold exceedance is saturated across both cases for this flow, so it is not distinguishing the scenarios in the current threshold set."
+        )
+
+    peak_ratio = _safe_ratio(
+        float(comparison.get("launder_peak_upward_velocity_m_s", 0.0)),
+        float(baseline.get("launder_peak_upward_velocity_m_s", 0.0)),
+    )
+    if peak_ratio >= 10.0:
+        cautions.append(
+            f"- `{comparison_label}` is driving an extreme increase in the launder upwelling proxy relative to `{baseline_label}`. In the current model form this may reflect both a real directional warning and any missing explicit bypass-path representation."
+        )
+
+    return cautions
+
+
+def _thresholds_are_saturated(
+    baseline: dict[str, object],
+    comparison: dict[str, object],
+    threshold_columns: list[str],
+) -> bool:
+    for column in threshold_columns:
+        baseline_value = float(baseline.get(column, 0.0))
+        comparison_value = float(comparison.get(column, 0.0))
+        if baseline_value not in (0.0, 1.0):
+            return False
+        if comparison_value not in (0.0, 1.0):
+            return False
+        if baseline_value != comparison_value:
+            return False
+    return bool(threshold_columns)
+
+
+def _safe_ratio(numerator: float, denominator: float) -> float:
+    if denominator == 0.0:
+        return float("inf") if numerator > 0.0 else 1.0
+    return numerator / denominator
 
 
 def _resolve_scenario_path(study_file: Path, scenario_path: str) -> Path:

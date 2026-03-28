@@ -1,0 +1,10 @@
+template_id: v0_1_test_pair
+title: v0.1 Test Pair Comparison
+subtitle: Side-by-side 2.5D voxel comparison for the original plan-view screening pair.
+output_slug: v0_1_test_pair
+output_type: comparison_voxel_stills
+cases:
+  - label: verification_empty
+    scenario_path: ../../scenarios/verification_empty_basin.yaml
+  - label: baseline_baffle
+    scenario_path: ../../scenarios/baseline_rectangular_basin.yaml

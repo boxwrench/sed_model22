@@ -1,0 +1,10 @@
+template_id: v0_2_design_vs_current
+title: SVWTP v0.2 Design vs Current
+subtitle: Side-by-side 2.5D voxel comparison for the current longitudinal screening workflow.
+output_slug: v0_2_design_vs_current
+output_type: comparison_voxel_stills
+cases:
+  - label: design_spec
+    scenario_path: ../../scenarios/svwtp_design_spec_basin.yaml
+  - label: current_blocked
+    scenario_path: ../../scenarios/svwtp_current_blocked_wall_basin.yaml
