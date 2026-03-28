@@ -23,7 +23,9 @@ Project state:
 
 Current implementation target:
 
-- V0.1 steady 2D depth-averaged hydraulic sandbox
+- dual screening workflows:
+  - `v0.1` plan-view hydraulic sandbox
+  - `v0.2` longitudinal design-vs-current comparison workflow
 - structured Cartesian grid
 - YAML scenario input
 - CLI-driven workflow
@@ -114,7 +116,7 @@ Tasks:
 - [x] add a single-baffle verification case
 - [ ] add mesh sensitivity smoke checks
 - [x] connect solver outputs to comparison-ready engineering metrics
-- [ ] add a simple multi-scenario comparison workflow
+- [x] add a simple multi-scenario comparison workflow
 
 Definition of done:
 

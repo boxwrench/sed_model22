@@ -24,9 +24,11 @@ The repo is now past pure scaffolding. The active build state is:
   - what changed, why it changed, and what comes next
 - `IMPLEMENTATION_PLAN.md`
   - the persistent milestone checklist and pickup queue
+- `README.md`
+  - the broad docs hub and current-state map
 - `V0_2_IMPLEMENTATION_HANDOFF.md`
   - the detailed V0.2 implementation spec
-  - the current best single document for the next coding push
+  - the current best single document for the next `v0.2` coding push
 - `research/CANON.md`
   - the implementation-facing synthesis for V0.1
 - `architecture/repo-structure.md`
@@ -54,11 +56,11 @@ The repo is now past pure scaffolding. The active build state is:
 
 1. `research/PRIMER.md`
 2. `research/CANON.md`
-3. `V0_2_IMPLEMENTATION_HANDOFF.md`
-4. `research/source-notes/sed_floc_basin_simulator_master_package.md`
-5. `research/source-notes/2D hydraulic simulator.md`
-6. `IMPLEMENTATION_PLAN.md`
-7. `architecture/simulation-roadmap.md`
+3. `IMPLEMENTATION_PLAN.md`
+4. `V0_2_IMPLEMENTATION_HANDOFF.md` when the session is about `v0.2` basin-comparison work
+5. `architecture/media-output-spec.md` when the session is about preview or report media
+6. `research/source-notes/sed_floc_basin_simulator_master_package.md`
+7. `research/source-notes/2D hydraulic simulator.md`
 8. `DEVLOG.md`
 
 ## Resume Here
