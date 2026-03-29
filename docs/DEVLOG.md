@@ -2,6 +2,44 @@
 
 This log is meant to stay short, chronological, and implementation-facing. Each entry should capture the repo state change, the reason for it, and the next immediate move.
 
+## 2026-03-28
+
+### Study-Level Media Packaging and Geometry Intake Tightening
+
+What changed:
+
+- tightened the preview-skip path so optional media rendering no longer swallows all exceptions
+- added targeted coverage for missing-`ffmpeg` preview skip behavior and near-zero-flow tracer behavior
+- added a shared media-layer `visual_scene.json` manifest so stills, HTML comparison pages, and previews consume one presentation contract instead of embedding more presentation logic in the solver
+- added `low_fidelity_preview` as a fast run-bundle preview mode for quicker iteration
+- upgraded the `v0.2` design-vs-current comparison page into a more leadership-facing artifact with narrative text, executive takeaways, highlighted metrics, and explicit model-boundary language
+- wired `compare-study` so each study now writes a study-level `media/` package with one comparison package per flow, including stills, `visual_scene.json`, comparison HTML, and preview artifacts built from the existing run bundles
+- cleaned and tightened `templates/intake_geometry_survey.yaml` so basin-local `x/z` coordinates are explicit, ambiguous elevation fields are renamed, bypass-path capture is structured, and encoding artifacts are removed
+
+Why:
+
+- leadership-facing communication now matters enough that study outputs should generate a repeatable visual package instead of leaving comparison media as a detached manual step
+- a shared media scene contract is the right next abstraction because it keeps presentation logic in the media layer while preserving the repo's current solver/report honesty boundary
+- the geometry intake template needed clearer coordinate semantics before drawing-derived geometry can be translated safely into `v0.2` scenarios
+
+Verification:
+
+- `python -m unittest tests.test_media tests.test_cli -v` passed
+- `python -m unittest tests.test_study tests.test_media -v` passed
+- `python -m unittest discover -s tests -v` passed with 34 tests
+
+Current interpretation:
+
+- `compare-study` is now a more complete decision-support workflow because it produces both tabular/report outputs and a study-level media package
+- the media layer now has a stable scene manifest that can support future renderer changes or interactive HTML work without moving presentation responsibilities into solver code
+- the intake template is now safer to use as the front door for real drawing extraction work, but the actual scenario translation still depends on the upcoming geometry details
+
+Next:
+
+- add a study-level landing page that links low, typical, and high flow packages together in one executive view
+- start feeding cleaned real-basin geometry into the updated intake template and translate that into refreshed `v0.2` scenarios
+- once the real geometry is in place, tune visual annotations and comparison copy against the actual plant questions instead of the placeholder template narrative
+
 ## 2026-03-27
 
 ### Pathline Preview Acceptance: Use Detention-Scale Time Compression

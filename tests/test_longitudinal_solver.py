@@ -77,6 +77,28 @@ class LongitudinalSolverTests(unittest.TestCase):
         self.assertLess(tracer.t50_s, tracer.t90_s)
         self.assertTrue(any("RTD proxy" in note for note in _metrics.notes))
 
+    def test_tracer_handles_zero_velocity_edge_case(self) -> None:
+        """Verify tracer simulation handles near-zero velocity fields gracefully."""
+        # Create a minimal scenario with very low flow
+        scenario = load_scenario(DESIGN_SCENARIO_PATH)
+        minimal_scenario = scenario.model_copy(
+            update={
+                "hydraulics": scenario.hydraulics.model_copy(update={"flow_rate_m3_s": 0.001}),
+                "numerics": scenario.numerics.model_copy(
+                    update={"nx": 10, "nz": 5, "max_iterations": 200}
+                ),
+            }
+        )
+        mesh = build_longitudinal_mesh(minimal_scenario)
+        _solver_summary, fields = solve_steady_longitudinal_screening_flow(minimal_scenario, mesh)
+
+        tracer = simulate_longitudinal_tracer(minimal_scenario, mesh, fields)
+
+        # Tracer should complete or terminate gracefully even with very low flow
+        self.assertIsNotNone(tracer)
+        self.assertTrue(math.isfinite(tracer.t10_s) or tracer.termination_reason == "max_steps_reached")
+        self.assertIn(tracer.termination_reason, ["rtd_proxy_target_fraction_reached", "max_steps_reached", "stagnant"])
+
     @staticmethod
     def _upper_band_mean(speed_field: list[list[float]]) -> float:
         upper_rows = [row for row in speed_field if row]

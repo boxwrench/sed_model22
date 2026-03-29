@@ -277,8 +277,6 @@ def simulate_longitudinal_tracer(
     spread_fraction = max(0.08, min(0.40, spread_fraction))
 
     sample_count = max(101, min(241, scenario.numerics.nx * 2))
-    if sample_count < 2:
-        sample_count = 2
     if max_time_s <= 0.0:
         raise ValueError("computed tracer time horizon must be positive")
 
@@ -923,7 +921,9 @@ def _initial_head_guess(mesh: LongitudinalMeshSummary) -> list[list[float]]:
 
 def _perforated_baffle_conductance(open_area_fraction: float, loss_scale: float) -> float:
     phi = open_area_fraction
-    k = ((0.707 * ((1.0 - phi) ** 0.375)) + 1.0 - (phi * phi)) ** 2 / (phi * phi)
+    # 0.707 is 1/sqrt(2), the classical vena contracta coefficient for sharp-edged orifices
+    orifice_coefficient = 0.707
+    k = ((orifice_coefficient * ((1.0 - phi) ** 0.375)) + 1.0 - (phi * phi)) ** 2 / (phi * phi)
     return max(1.0e-6, phi / (1.0 + (loss_scale * k)))
 
 

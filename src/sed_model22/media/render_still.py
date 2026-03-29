@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 import re
 from typing import Literal
@@ -9,9 +10,16 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..config import LongitudinalScenarioConfig, PlanViewScenarioConfig, ScenarioConfig, load_scenario
 from ..run import load_fields, load_scenario_snapshot, load_summary, materialize_run, override_scenario_flow_rate
+from ..solver import HydraulicFieldData, LongitudinalFieldData
 from ..viz import write_longitudinal_voxel_isometric_svg, write_plan_view_voxel_isometric_svg
 from .layouts import build_comparison_html
-from .manifest import RenderedCaseArtifact, StillRenderArtifacts, write_manifest
+from .manifest import (
+    RenderedCaseArtifact,
+    StillRenderArtifacts,
+    VisualScene,
+    VisualSceneCase,
+    write_manifest,
+)
 
 
 def _repo_root() -> Path:
@@ -38,9 +46,20 @@ class MediaTemplate(BaseModel):
     template_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
     subtitle: str = ""
+    narrative: str = ""
+    focus_points: list[str] = Field(default_factory=list)
     output_slug: str | None = None
     output_type: Literal["single_case_voxel_still", "comparison_voxel_stills"] = "comparison_voxel_stills"
     cases: list[MediaCaseTemplate] = Field(min_length=1)
+
+
+@dataclass(frozen=True)
+class PreparedMediaCase:
+    label: str
+    scenario_path: str
+    scenario_snapshot: ScenarioConfig
+    fields: HydraulicFieldData | LongitudinalFieldData
+    summary: dict[str, object]
 
 
 def load_media_template(path: str | Path) -> MediaTemplate:
@@ -64,15 +83,15 @@ def render_media_template(
         template_path = Path(template_or_path).resolve()
         template = load_media_template(template_path)
 
-    root = Path(output_root) if output_root else (_repo_root() / "visualizations" / "_generated" / _slugify(template.output_slug or template.template_id))
+    root = Path(output_root) if output_root else (
+        _repo_root() / "visualizations" / "_generated" / _slugify(template.output_slug or template.template_id)
+    )
     root.mkdir(parents=True, exist_ok=True)
     run_root = root / "_runs"
     run_root.mkdir(parents=True, exist_ok=True)
+    prepared_cases: list[PreparedMediaCase] = []
 
-    rendered_cases: list[RenderedCaseArtifact] = []
-    case_summaries: list[dict[str, object]] = []
-
-    for index, case in enumerate(template.cases, start=1):
+    for case in template.cases:
         scenario_path = _resolve_template_path(case.scenario_path, template_path)
         scenario = _load_media_scenario(case, scenario_path)
         artifacts = materialize_run(
@@ -80,50 +99,69 @@ def render_media_template(
             scenario=scenario,
             run_root_override=run_root / _slugify(case.label),
         )
-        scenario_snapshot = load_scenario_snapshot(artifacts.run_dir)
-        fields = load_fields(artifacts.run_dir)
-        still_path = root / f"{index:02d}_{_slugify(case.label)}_voxel_isometric.svg"
-        if isinstance(scenario_snapshot, LongitudinalScenarioConfig):
-            write_longitudinal_voxel_isometric_svg(scenario_snapshot, fields, still_path)
-            model_form = "v0.2 longitudinal 2.5D voxel view"
-        elif isinstance(scenario_snapshot, PlanViewScenarioConfig):
-            write_plan_view_voxel_isometric_svg(scenario_snapshot, fields, still_path)
-            model_form = "v0.1 plan-view 2.5D voxel view"
-        else:
-            raise TypeError(f"unsupported scenario snapshot type: {type(scenario_snapshot)!r}")
-
-        summary = load_summary(artifacts.run_dir)
-        case_summaries.append(summary)
-        rendered_cases.append(
-            RenderedCaseArtifact(
+        prepared_cases.append(
+            PreparedMediaCase(
                 label=case.label,
                 scenario_path=str(scenario_path),
-                model_form=model_form,
-                still_path=str(still_path),
-                highlighted_metrics=_highlighted_metrics(summary),
-                warnings=_summary_warnings(summary),
+                scenario_snapshot=load_scenario_snapshot(artifacts.run_dir),
+                fields=load_fields(artifacts.run_dir),
+                summary=load_summary(artifacts.run_dir),
             )
         )
 
+    return render_prepared_media_cases(
+        template=template,
+        prepared_cases=prepared_cases,
+        output_root=root,
+    )
+
+
+def render_prepared_media_cases(
+    *,
+    template: MediaTemplate,
+    prepared_cases: list[PreparedMediaCase],
+    output_root: str | Path | None = None,
+) -> StillRenderArtifacts:
+    root = Path(output_root) if output_root else (
+        _repo_root() / "visualizations" / "_generated" / _slugify(template.output_slug or template.template_id)
+    )
+    root.mkdir(parents=True, exist_ok=True)
+
+    rendered_cases: list[RenderedCaseArtifact] = []
+    case_summaries: list[dict[str, object]] = []
+
+    for index, case in enumerate(prepared_cases, start=1):
+        still_path = root / f"{index:02d}_{_slugify(case.label)}_voxel_isometric.svg"
+        model_form = _write_case_still(case.scenario_snapshot, case.fields, still_path)
+        case_summaries.append(case.summary)
+        rendered_cases.append(
+            RenderedCaseArtifact(
+                label=case.label,
+                scenario_path=case.scenario_path,
+                model_form=model_form,
+                still_path=str(still_path),
+                highlighted_metrics=_highlighted_metrics(case.summary),
+                warnings=_summary_warnings(case.summary),
+            )
+        )
     comparison_lines = _comparison_lines(rendered_cases, case_summaries)
+    executive_summary = _executive_summary_lines(template, case_summaries)
     warning_lines = _dedupe_lines([warning for case in rendered_cases for warning in case.warnings])
+    visual_scene = _build_visual_scene(
+        template=template,
+        rendered_cases=rendered_cases,
+        comparison_lines=comparison_lines,
+        executive_summary=executive_summary,
+        warning_lines=warning_lines,
+    )
+    scene_manifest_path = root / "visual_scene.json"
+    write_manifest(scene_manifest_path, visual_scene)
 
     comparison_html_path: Path | None = None
     if len(rendered_cases) >= 2:
-        left_case = rendered_cases[0]
-        right_case = rendered_cases[1]
         comparison_html_path = root / f"{_slugify(template.output_slug or template.template_id)}.html"
         comparison_html_path.write_text(
-            build_comparison_html(
-                title=template.title,
-                subtitle=template.subtitle or "Template-driven voxel comparison output",
-                left_label=left_case.label,
-                left_filename=Path(left_case.still_path).name,
-                right_label=right_case.label,
-                right_filename=Path(right_case.still_path).name,
-                comparison_lines=comparison_lines,
-                warning_lines=warning_lines or ["This output is a screening visualization, not a fidelity upgrade."],
-            ),
+            build_comparison_html(scene=visual_scene),
             encoding="utf-8",
         )
 
@@ -134,12 +172,27 @@ def render_media_template(
         output_root=str(root),
         comparison_html_path=str(comparison_html_path) if comparison_html_path else None,
         manifest_path=str(manifest_path),
+        scene_manifest_path=str(scene_manifest_path),
         cases=rendered_cases,
         comparison_lines=comparison_lines,
         warning_lines=warning_lines,
     )
     write_manifest(manifest_path, artifacts)
     return artifacts
+
+
+def _write_case_still(
+    scenario_snapshot: ScenarioConfig,
+    fields: HydraulicFieldData | LongitudinalFieldData,
+    still_path: Path,
+) -> str:
+    if isinstance(scenario_snapshot, LongitudinalScenarioConfig):
+        write_longitudinal_voxel_isometric_svg(scenario_snapshot, fields, still_path)
+        return "v0.2 longitudinal 2.5D voxel view"
+    if isinstance(scenario_snapshot, PlanViewScenarioConfig):
+        write_plan_view_voxel_isometric_svg(scenario_snapshot, fields, still_path)
+        return "v0.1 plan-view 2.5D voxel view"
+    raise TypeError(f"unsupported scenario snapshot type: {type(scenario_snapshot)!r}")
 
 
 def _resolve_template_path(raw_path: str, template_path: Path | None) -> Path:
@@ -243,6 +296,100 @@ def _comparison_lines(
             delta = right_value - left_value
             lines.append(f"{label}: `{right_case.label} - {left_case.label} = {delta:+.4g}`")
     return lines
+
+
+def _executive_summary_lines(
+    template: MediaTemplate,
+    case_summaries: list[dict[str, object]],
+) -> list[str]:
+    summary_lines = list(template.focus_points)
+    if len(case_summaries) < 2:
+        return summary_lines or ["Single-case screening visualization for structured review."]
+
+    left_metrics = _mapping(case_summaries[0].get("metrics"))
+    right_metrics = _mapping(case_summaries[1].get("metrics"))
+    left_label = str(_mapping(case_summaries[0].get("metadata")).get("case_id", "left_case"))
+    right_label = str(_mapping(case_summaries[1].get("metadata")).get("case_id", "right_case"))
+
+    transition_headloss = _delta_phrase(
+        right_metrics.get("transition_headloss_m"),
+        left_metrics.get("transition_headloss_m"),
+        higher="higher transition-wall headloss",
+        lower="lower transition-wall headloss",
+    )
+    if transition_headloss:
+        summary_lines.append(_relationship_sentence(right_label, left_label, transition_headloss))
+
+    uniformity = _delta_phrase(
+        right_metrics.get("post_transition_velocity_uniformity_index"),
+        left_metrics.get("post_transition_velocity_uniformity_index"),
+        higher="better post-transition redistribution uniformity",
+        lower="worse post-transition redistribution uniformity",
+    )
+    if uniformity:
+        summary_lines.append(_relationship_sentence(right_label, left_label, uniformity))
+
+    launder = _delta_phrase(
+        right_metrics.get("launder_peak_upward_velocity_m_s"),
+        left_metrics.get("launder_peak_upward_velocity_m_s"),
+        higher="higher launder upwelling proxy",
+        lower="lower launder upwelling proxy",
+    )
+    if launder:
+        summary_lines.append(_relationship_sentence(right_label, left_label, launder))
+
+    return _dedupe_lines(summary_lines)
+
+
+def _build_visual_scene(
+    *,
+    template: MediaTemplate,
+    rendered_cases: list[RenderedCaseArtifact],
+    comparison_lines: list[str],
+    executive_summary: list[str],
+    warning_lines: list[str],
+) -> VisualScene:
+    scene_type = "comparison_voxel_scene" if len(rendered_cases) >= 2 else "single_case_voxel_scene"
+    return VisualScene(
+        scene_type=scene_type,
+        title=template.title,
+        subtitle=template.subtitle or "Template-driven voxel comparison output",
+        narrative=template.narrative,
+        focus_points=list(template.focus_points),
+        executive_summary=executive_summary,
+        comparison_lines=comparison_lines,
+        warning_lines=warning_lines or ["This output remains a screening visualization, not a fidelity upgrade."],
+        cases=[
+            VisualSceneCase(
+                label=case.label,
+                model_form=case.model_form,
+                still_filename=Path(case.still_path).name,
+                highlighted_metrics=case.highlighted_metrics,
+                warnings=case.warnings,
+            )
+            for case in rendered_cases
+        ],
+    )
+
+
+def _delta_phrase(
+    value: object,
+    baseline: object,
+    *,
+    higher: str,
+    lower: str,
+) -> str | None:
+    if not isinstance(value, (int, float)) or not isinstance(baseline, (int, float)):
+        return None
+    if abs(value - baseline) < 1.0e-9:
+        return "no material change"
+    return higher if value > baseline else lower
+
+
+def _relationship_sentence(label: str, baseline_label: str, phrase: str) -> str:
+    if phrase == "no material change":
+        return f"{label} shows no material change relative to {baseline_label}."
+    return f"{label} shows {phrase} than {baseline_label}."
 
 
 def _mapping(value: object) -> dict[str, object]:

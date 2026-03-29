@@ -51,7 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument(
         "--media-policy",
-        choices=["off", "still_only", "best_effort_preview", "require_preview"],
+        choices=["off", "still_only", "low_fidelity_preview", "best_effort_preview", "require_preview"],
         default="best_effort_preview",
         help="Control voxel and preview generation for the run bundle.",
     )
@@ -243,6 +243,8 @@ def main(argv: list[str] | None = None) -> int:
             artifacts = run_comparison_study(args.study)
             print(f"Created comparison study at {artifacts.study_dir}")
             print(f"Report: {artifacts.report_path}")
+            if artifacts.media_root:
+                print(f"Media: {artifacts.media_root}")
             return 0
 
         parser.error(f"Unknown command: {args.command}")

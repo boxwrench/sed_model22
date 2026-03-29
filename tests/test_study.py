@@ -46,6 +46,7 @@ class StudyTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             self.assertIn("Created comparison study", stdout.getvalue())
+            self.assertIn("Media:", stdout.getvalue())
 
             study_dirs = list(run_root.iterdir())
             self.assertEqual(len(study_dirs), 1)
@@ -54,9 +55,12 @@ class StudyTests(unittest.TestCase):
             summary_path = study_dir / "comparison_summary.json"
             csv_path = study_dir / "comparison_summary.csv"
             report_path = study_dir / "comparison_report.md"
+            media_root = study_dir / "media"
+            media_manifest_path = media_root / "manifest.json"
             self.assertTrue(summary_path.exists())
             self.assertTrue(csv_path.exists())
             self.assertTrue(report_path.exists())
+            self.assertTrue(media_manifest_path.exists())
 
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
             self.assertEqual(summary["study_id"], "svwtp_design_vs_current")
@@ -74,6 +78,14 @@ class StudyTests(unittest.TestCase):
             ]
             self.assertEqual(len(run_manifest_paths), 6)
             self.assertEqual(len(media_manifest_paths), 0)
+
+            media_manifest = json.loads(media_manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(3, len(media_manifest["flow_media"]))
+            low_media = media_root / "low"
+            self.assertTrue((low_media / "manifest.json").exists())
+            self.assertTrue((low_media / "visual_scene.json").exists())
+            self.assertTrue((low_media / "preview" / "manifest.json").exists())
+            self.assertTrue((low_media / "svwtp-design-vs-current-low.html").exists())
 
             report_text = report_path.read_text(encoding="utf-8")
             self.assertIn("current_blocked - design_spec", report_text)
@@ -108,6 +120,7 @@ class StudyTests(unittest.TestCase):
             study_dir = next(run_root.iterdir())
             report_path = study_dir / "comparison_report.md"
             report_text = report_path.read_text(encoding="utf-8")
+            media_html = (study_dir / "media" / "low" / "svwtp-design-vs-current-low.html").read_text(encoding="utf-8")
 
             self.assertIn("blocked_case - design_case", report_text)
             self.assertIn("| Metric | design_case | blocked_case | delta (blocked_case - design_case) |", report_text)
@@ -117,6 +130,8 @@ class StudyTests(unittest.TestCase):
             self.assertIn("t90", report_text)
             self.assertIn("Screening cautions:", report_text)
             self.assertNotIn("No comparison pairs were found", report_text)
+            self.assertIn("Executive Takeaways", media_html)
+            self.assertIn("transition-wall impact", media_html)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 

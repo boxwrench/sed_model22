@@ -11,6 +11,7 @@ Current artifact:
 - `v0_1_baseline_baffle_voxel_isometric.svg`: 2.5D isometric voxel-style rendering of the original baseline `v0.1` baffle test case.
 - `v0_1_test_pair_voxel_comparison.html`: side-by-side comparison page for the original `v0.1` test pair.
 - `templates/`: small reusable media templates for repeatable still and preview generation.
+- generated template outputs now also include `visual_scene.json`, a media-layer scene manifest that renderer-specific outputs can share without pushing presentation logic into the solver
 
 Important interpretation notes:
 
@@ -31,3 +32,4 @@ Animation setup notes:
 - The practical user-download path for this repo is `tools/ffmpeg/bin/ffmpeg.exe`.
 - The current preview path rasterizes SVG scenes before stitching. If `cairosvg` is unavailable, the pipeline still writes the stills, cards, and scene manifest but skips the `.mp4`.
 - If `ffmpeg` is not found, the media pipeline should still render stills, comparison pages, cards, and manifests; it will just skip the `.mp4` preview.
+- `low_fidelity_preview` is the fast iteration mode for run bundles. It trades resolution and frame count for a much quicker directional preview.

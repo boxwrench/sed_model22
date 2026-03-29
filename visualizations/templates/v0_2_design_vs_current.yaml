@@ -1,6 +1,12 @@
 template_id: v0_2_design_vs_current
 title: SVWTP v0.2 Design vs Current
 subtitle: Side-by-side 2.5D voxel comparison for the current longitudinal screening workflow.
+narrative: Compare the design-intent basin against the blocked-wall current condition using the same longitudinal screening view so leadership can see what changed hydraulically before committing to field work or capital planning.
+focus_points:
+  - blocked-wall impact
+  - redistribution quality
+  - launder approach risk
+  - screening-only confidence
 output_slug: v0_2_design_vs_current
 output_type: comparison_voxel_stills
 cases:

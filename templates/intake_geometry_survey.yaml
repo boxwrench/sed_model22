@@ -1,0 +1,332 @@
+﻿# Intake Geometry Survey Template
+# sed_model22 - Basin Intake Geometry Capture
+#
+# PURPOSE: Capture basin geometry from drawings, specs, and field observation
+# WORKFLOW: AI pre-fill -> Human review -> Field verification
+#
+# ANONYMIZATION REQUIREMENT:
+#   - Remove facility names, agency names, and locations
+#   - Replace with generic identifiers like "Basin A", "Plant Code XYZ123"
+#   - Remove dates that identify the facility (construction dates OK, survey dates OK)
+#   - If in doubt, redact
+
+intake_geometry:
+  # ---------------------------------------------------------------------------
+  # GLOBAL COORDINATE RULE
+  # Use one coordinate system throughout this file unless a field explicitly
+  # calls for MSL or another datum:
+  #   - x = 0 at the upstream interior wall of the basin
+  #   - z = 0 at the basin floor
+  #   - all x/z geometry values are meters in basin-local coordinates
+  # ---------------------------------------------------------------------------
+  coordinate_system:
+    x_origin: "upstream interior wall"
+    z_origin: "basin floor"
+    units: "m"
+    notes: "Use basin-local x/z coordinates for all geometry fields below unless a field explicitly says MSL."
+
+  # ---------------------------------------------------------------------------
+  # SECTION 1: DOCUMENT SOURCES
+  # Human: List what you reviewed. AI can help identify sheet numbers.
+  # ---------------------------------------------------------------------------
+  sources:
+    plan_view_drawing: ""           # e.g., "A-103" or "Sheet 7"
+    section_elevation: ""           # e.g., "A-104 Basin Section"
+    hydraulic_profile: ""           # e.g., "P-201" or "Profile Sheet 3"
+    equipment_schedule: ""          # e.g., "S-401 Plate Settler Schedule"
+    specifications: ""              # e.g., "Section 11310 - Sedimentation Basins"
+    as_built_drawings: ""           # e.g., "AB-203 (1995)" or "none available"
+    field_photos: false             # true if photos taken, false if drawings only
+    field_verification: false       # true if someone measured on-site
+
+    # ANONYMIZATION CHECK: Verify no facility name appears in sheet titles
+    anonymization_verified: false   # set to true after checking
+
+  # ---------------------------------------------------------------------------
+  # SECTION 2: BASIN ENVELOPE
+  # AI-extractable from dimension strings in plans/sections
+  # Human: Verify against scale and mark confidence
+  # ---------------------------------------------------------------------------
+  basin_envelope:
+    length_m:
+      value:
+      confidence: ""                # high / medium / low
+      source: ""                    # e.g., "A-103 dimension string"
+      note: ""
+
+    width_m:
+      value:
+      confidence: ""
+      source: ""
+      note: ""
+
+    water_depth_m:
+      value:
+      confidence: ""
+      source: ""
+      note: ""
+
+    floor_elevation_msl:            # optional, only if clearly labeled
+      value:
+      confidence: ""
+      source: ""
+      note: ""
+
+  # ---------------------------------------------------------------------------
+  # SECTION 3: INLET CONFIGURATION
+  # AI can extract from detail sheets; human confirms orifice vs channel vs pipe
+  # ---------------------------------------------------------------------------
+  inlet:
+    type: ""                        # orifice_wall / channel / pipe / unknown
+
+    # For orifice walls (most common)
+    orifice_wall:
+      x_location_m: 0.0             # typically 0 at upstream interior wall
+      count:
+        value:
+        confidence: ""
+        source: ""
+      opening:
+        shape: ""                   # rectangular / circular / unknown
+        width_m:                    # for rectangular
+          value:
+          confidence: ""
+          estimated: false          # true if inferred, not dimensioned
+        height_m:
+          value:
+          confidence: ""
+          estimated: false
+        diameter_m:                 # for circular
+          value:
+          confidence: ""
+          estimated: false
+      total_open_height_m:          # from invert to soffit
+        value:
+        confidence: ""
+        source: ""
+      center_elevation_above_floor_m:
+        value:
+        confidence: ""
+        source: ""
+        note: ""                    # basin-local z coordinate, not depth below water surface
+      center_depth_below_water_surface_m:
+        value:
+        confidence: ""
+        source: ""
+        note: ""                    # optional alternate capture if drawing only shows depth below water surface
+
+    # For other inlet types
+    channel:
+      width_m:
+      invert_elevation_m:
+    pipe:
+      diameter_m:
+      invert_elevation_m:
+
+  # ---------------------------------------------------------------------------
+  # SECTION 4: BAFFLE WALLS (as-designed)
+  # AI can extract positions; human identifies type and verifies hole patterns
+  # ---------------------------------------------------------------------------
+  baffle_walls:
+    - name: "transition_wall"       # or "inlet_baffle", "mid_baffle", etc.
+      type: ""                      # perforated / solid / slotted / unknown
+      position:
+        x_m:
+          value:
+          confidence: ""
+          source: ""
+        z_bottom_m:
+          value: 0.0                # often 0 (floor)
+          confidence: ""
+        z_top_m:
+          value:
+          confidence: ""           # often water_depth_m
+
+      # For perforated walls only
+      perforation:
+        pattern: ""                 # diamond_cutout / circular_holes / slotted / unknown
+        open_area_fraction:
+          value:
+          confidence: ""
+          source: ""                # e.g., "Spec table 3-A" or "Calculated from detail"
+        hole_diameter_m:            # if circular
+          value:
+        slot_width_m:               # if slotted
+          value:
+        slot_height_m:
+          value:
+
+      plate_thickness_m:            # wall thickness
+        value:
+        confidence: ""
+
+      notes: ""
+
+  # ---------------------------------------------------------------------------
+  # SECTION 5: PLATE SETTLER ZONE
+  # AI-extractable from equipment schedules; verify elevations from section
+  # ---------------------------------------------------------------------------
+  plate_settler_zone:
+    x_start_m:
+      value:
+      confidence: ""
+      source: ""
+    x_end_m:
+      value:
+      confidence: ""
+      source: ""
+    z_bottom_m:                     # top of sludge zone / bottom of plates
+      value:
+      confidence: ""
+      source: ""
+    z_top_m:                        # water surface or plate top
+      value:
+      confidence: ""
+      source: ""
+
+    plate_geometry:
+      angle_deg:                    # typically 55-60 degrees
+        value:
+        confidence: ""
+      spacing_m:                    # center-to-center
+        value:
+        confidence: ""
+      thickness_m:
+        value: 0.002                # often 2mm standard
+        confidence: ""
+
+    notes: ""
+
+  # ---------------------------------------------------------------------------
+  # SECTION 6: OUTLET / LAUNDER
+  # ---------------------------------------------------------------------------
+  outlet:
+    type: "launder"                 # launder / submerged_orifice / weir / unknown
+
+    launder:
+      x_start_m:
+        value:
+        confidence: ""
+      x_end_m:
+        value:
+        confidence: ""
+      elevation_above_floor_m:      # basin-local z coordinate, often near water surface
+        value:
+        confidence: ""
+        source: ""
+        note: ""
+      weir_type: ""                 # v-notch / rectangular / submerged / unknown
+
+    # For submerged orifices (alternative outlet type)
+    submerged_orifice:
+      x_location_m:
+      elevation_above_floor_m:
+      diameter_m:
+
+  # ---------------------------------------------------------------------------
+  # SECTION 7: CURRENT STATE DEVIATIONS
+  # This section REQUIRES human judgment and/or field observation
+  # AI cannot determine what has changed since original construction
+  # ---------------------------------------------------------------------------
+  current_state:
+    survey_date: ""                 # YYYY-MM-DD or "unknown"
+    surveyed_by: ""                 # initials or role, not full name
+
+    deviations:                     # List known modifications
+      - location: "transition_wall"
+        change: ""                  # e.g., "blocked with plywood backer boards"
+        estimated_date: ""          # e.g., "~2015" or "before 2020"
+        flow_path_impact: ""        # e.g., "forces flow over/under via serpentine path"
+        bypass_path:
+          type: ""                  # over / under / side / serpentine / multiple / unknown / none
+          x_start_m:
+            value:
+            confidence: ""
+          x_end_m:
+            value:
+            confidence: ""
+          z_bottom_m:
+            value:
+            confidence: ""
+          z_top_m:
+            value:
+            confidence: ""
+          estimated_open_area_m2:
+            value:
+            confidence: ""
+          note: ""
+        verification: ""            # visual / measured / reported / inferred
+
+      # Add more as needed:
+      # - location: "inlet_orifices"
+      #   change: "3 of 8 orifices partially blocked by debris"
+      #   ...
+
+    # Comparison to design intent
+    design_vs_current_confidence: ""  # high / medium / low
+    # high = field verified and well documented
+    # medium = visual inspection or good records
+    # low = hearsay, incomplete info
+
+  # ---------------------------------------------------------------------------
+  # SECTION 8: DATA QUALITY SUMMARY
+  # Human assessment of overall confidence
+  # ---------------------------------------------------------------------------
+  data_quality:
+    overall_confidence: ""          # high / medium / low
+
+    by_category:
+      basin_envelope: ""            # usually high from clean drawings
+      inlet_geometry: ""            # medium if dimensions are in spec tables
+      baffle_positions: ""          # medium if clearly dimensioned
+      baffle_openings: ""           # often low - hole patterns hard to read
+      plate_settler_geometry: ""    # usually high from equipment schedules
+      outlet_geometry: ""           # usually high
+      current_state: ""             # usually low without field visit
+
+    limiting_factors:               # What's the weakest link?
+      - ""
+      # e.g., "No as-built drawings available"
+      # e.g., "Transition wall blockage extent estimated from photos"
+      # e.g., "Orifice dimensions not dimensioned on drawings"
+
+    recommended_verification:       # What should be field-measured?
+      - ""
+      # e.g., "Measure actual orifice opening heights"
+      # e.g., "Confirm backer board placement and bypass flow path"
+
+  # ---------------------------------------------------------------------------
+  # SECTION 9: ANONYMIZATION LOG
+  # Record what was removed/changed for privacy
+  # ---------------------------------------------------------------------------
+  anonymization:
+    original_facility_name: "[REDACTED]"
+    original_location: "[REDACTED]"
+    plant_code: ""                  # optional anonymous identifier, e.g., "SW-001"
+    basin_identifier: ""            # e.g., "Train 1", "Basin A", "North Basin"
+    redactions_made:
+      - "Removed facility name from all drawing references"
+      - "Removed city/county from location data"
+      # Add others as needed
+
+# =============================================================================
+# WORKFLOW CHECKLIST
+# =============================================================================
+# [ ] AI extracted candidate values from PDFs
+# [ ] Human reviewed each value and marked confidence
+# [ ] Human verified anonymization (no facility names remain)
+# [ ] Current-state deviations documented (requires field knowledge)
+# [ ] Limiting factors and recommended verification listed
+# [ ] Ready to translate to sed_model22 scenario YAML
+#
+# TRANSLATION NOTES:
+# - This template captures more than sed_model22 currently uses
+# - Unused fields can be preserved as metadata
+# - Core fields mapped to scenario YAML:
+#     basin_envelope.length_m  -> geometry.basin_length_m
+#     inlet.orifice_wall.*     -> upstream.*
+#     baffle_walls[0].*        -> features[0].*
+#     plate_settler_zone.*     -> features[1].*
+#     outlet.launder.*         -> features[2].*
+# - Do not mix MSL elevations with basin-local z coordinates during translation
+# - If only depth-below-water-surface is known, convert to basin-local z before writing scenario YAML

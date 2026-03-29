@@ -378,9 +378,6 @@ class LongitudinalScenarioConfig(BaseModel):
             if not (0.0 <= station.x_m <= geometry.basin_length_m):
                 raise ValueError(f"evaluation station '{station.name}' x_m must lie within the basin length")
 
-        if any(value <= 0.0 for value in self.performance_proxies.settling_velocity_thresholds_m_per_s):
-            raise ValueError("settling velocity thresholds must be positive")
-
         return self
 
 

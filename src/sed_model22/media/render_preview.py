@@ -26,23 +26,42 @@ def materialize_preview(
         template = load_media_template(template_path)
 
     still_artifacts = render_media_template(template_path or template, output_root=output_root)
+    return materialize_preview_from_stills(
+        still_artifacts=still_artifacts,
+        template_id=template.template_id,
+        title=template.title,
+        subtitle=template.subtitle or "Template-driven basin comparison preview",
+        ffmpeg_path=ffmpeg_path,
+        fps=fps,
+    )
+
+
+def materialize_preview_from_stills(
+    *,
+    still_artifacts,
+    template_id: str,
+    title: str,
+    subtitle: str,
+    ffmpeg_path: str | None = None,
+    fps: int = 12,
+) -> PreviewArtifacts:
     preview_root = Path(still_artifacts.output_root) / "preview"
     preview_root.mkdir(parents=True, exist_ok=True)
 
     title_card_path = write_title_card(
         preview_root / "title_card.svg",
-        title=template.title,
-        subtitle=template.subtitle or "Template-driven basin comparison preview",
-        template_id=template.template_id,
+        title=title,
+        subtitle=subtitle,
+        template_id=template_id,
     )
     metrics_card_path = write_metrics_card(
         preview_root / "metrics_card.svg",
-        title=template.title,
+        title=title,
         lines=still_artifacts.comparison_lines[:6] or ["Comparison metrics will be populated once case stills are available."],
     )
     warnings_card_path = write_warnings_card(
         preview_root / "warnings_card.svg",
-        title=template.title,
+        title=title,
         lines=still_artifacts.warning_lines[:6] or ["This output remains a screening visualization and does not imply a 3D solve."],
     )
 
@@ -76,7 +95,7 @@ def materialize_preview(
 
     manifest_path = preview_root / "manifest.json"
     artifacts = PreviewArtifacts(
-        template_id=template.template_id,
+        template_id=template_id,
         preview_root=str(preview_root),
         manifest_path=str(manifest_path),
         title_card_path=str(title_card_path),
@@ -84,6 +103,7 @@ def materialize_preview(
         warnings_card_path=str(warnings_card_path),
         poster_path=str(poster_path),
         scene_sequence_path=str(scene_sequence_path),
+        scene_manifest_path=still_artifacts.scene_manifest_path,
         preview_video_path=str(preview_video_path) if preview_video_path else None,
         ffmpeg_path=resolved_ffmpeg_path,
     )

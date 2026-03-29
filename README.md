@@ -87,10 +87,10 @@ sed-model validate scenarios/baseline_rectangular_basin.yaml
 - `validate <scenario>`: validate YAML against the current scenario schema
 - `validate-study <study>`: validate a comparison study YAML file
 - `run-hydraulics <scenario>`: materialize a hydraulic run directory with mesh, fields, summary, SVG artifacts, and run media
-- `run-hydraulics --media-policy {off,still_only,best_effort_preview,require_preview}`: control voxel and preview generation; current default is `best_effort_preview`
+- `run-hydraulics --media-policy {off,still_only,low_fidelity_preview,best_effort_preview,require_preview}`: control voxel and preview generation; use `low_fidelity_preview` for a faster low-resolution preview pass and keep `best_effort_preview` as the normal default
 - `summarize <run_dir>`: print a concise run summary
 - `plot <run_dir>`: regenerate the layout and velocity SVGs from the run snapshot
-- `compare-study <study>`: run a case-by-flow study and write comparison outputs
+- `compare-study <study>`: run a case-by-flow study and write comparison outputs plus study-level media packages under `media/`
 
 ## Immediate Next Step
 

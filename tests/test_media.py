@@ -62,6 +62,8 @@ class MediaPipelineTests(unittest.TestCase):
                         "template_id": "test_v0_2_pair",
                         "title": "Test v0.2 Pair",
                         "subtitle": "Template smoke test",
+                        "narrative": "Leadership-facing comparison smoke test.",
+                        "focus_points": ["headloss shift", "launder proxy"],
                         "cases": [
                             {
                                 "label": "design_spec",
@@ -84,6 +86,7 @@ class MediaPipelineTests(unittest.TestCase):
 
             self.assertEqual(2, len(artifacts.cases))
             self.assertTrue((temp_root / "output" / "manifest.json").exists())
+            self.assertTrue((temp_root / "output" / "visual_scene.json").exists())
             self.assertTrue((temp_root / "output" / "01_design-spec_voxel_isometric.svg").exists())
             self.assertTrue((temp_root / "output" / "02_current-blocked_voxel_isometric.svg").exists())
             self.assertIsNotNone(artifacts.comparison_html_path)
@@ -92,6 +95,14 @@ class MediaPipelineTests(unittest.TestCase):
             manifest = json.loads((temp_root / "output" / "manifest.json").read_text(encoding="utf-8"))
             self.assertEqual("test_v0_2_pair", manifest["template_id"])
             self.assertIn("comparison_lines", manifest)
+            scene = json.loads((temp_root / "output" / "visual_scene.json").read_text(encoding="utf-8"))
+            self.assertEqual("comparison_voxel_scene", scene["scene_type"])
+            self.assertIn("headloss shift", scene["focus_points"])
+            self.assertEqual(2, len(scene["cases"]))
+
+            comparison_html = Path(artifacts.comparison_html_path).read_text(encoding="utf-8")
+            self.assertIn("Executive Takeaways", comparison_html)
+            self.assertIn("Leadership-facing comparison smoke test.", comparison_html)
 
     def test_materialize_preview_writes_cards_and_sequence(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -127,6 +138,8 @@ class MediaPipelineTests(unittest.TestCase):
             self.assertTrue(Path(artifacts.warnings_card_path).exists())
             self.assertTrue(Path(artifacts.poster_path).exists())
             self.assertTrue(Path(artifacts.scene_sequence_path).exists())
+            self.assertIsNotNone(artifacts.scene_manifest_path)
+            self.assertTrue(Path(artifacts.scene_manifest_path).exists())
             if artifacts.preview_video_path is not None:
                 self.assertTrue(Path(artifacts.preview_video_path).exists())
 
@@ -170,6 +183,47 @@ class MediaPipelineTests(unittest.TestCase):
         self.assertIn("<svg", svg)
         self.assertIn("Deterministic streamlines from steady screening field", svg)
         self.assertIn("Not transient CFD", svg)
+
+    def test_preview_skipped_when_ffmpeg_missing(self) -> None:
+        """Verify preview generation is skipped gracefully when ffmpeg is unavailable."""
+        import subprocess
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            template_path = temp_root / "template.yaml"
+            template_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "template_id": "test_missing_ffmpeg",
+                        "title": "Test Missing FFmpeg",
+                        "cases": [
+                            {
+                                "label": "empty",
+                                "scenario_path": str(ROOT / "scenarios" / "verification_empty_basin.yaml"),
+                                "numerics_override": {"nx": 12, "ny": 8, "max_iterations": 200},
+                            },
+                        ],
+                    },
+                    sort_keys=False,
+                ),
+                encoding="utf-8",
+            )
+
+            # Set a non-existent ffmpeg path to simulate missing binary
+            prior = os.environ.get("SED_MODEL22_FFMPEG")
+            os.environ["SED_MODEL22_FFMPEG"] = str(temp_root / "nonexistent_ffmpeg.exe")
+            try:
+                artifacts = materialize_preview(template_path, output_root=temp_root / "output")
+
+                # Should still produce stills even if video fails
+                self.assertTrue(Path(artifacts.title_card_path).exists())
+                self.assertTrue(Path(artifacts.poster_path).exists())
+                # Video may be None when ffmpeg fails
+            finally:
+                if prior is None:
+                    os.environ.pop("SED_MODEL22_FFMPEG", None)
+                else:
+                    os.environ["SED_MODEL22_FFMPEG"] = prior
 
 
 if __name__ == "__main__":

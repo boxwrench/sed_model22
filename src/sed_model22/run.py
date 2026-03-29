@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
 
 from pydantic import BaseModel, ConfigDict
 
@@ -439,6 +440,7 @@ def _materialize_run_media(
         "voxel_plot_path": str(voxel_path),
         "preview_video_path": None,
         "media_status": "still_only",
+        "preview_profile": "low_fidelity" if media_policy == "low_fidelity_preview" else "standard",
     }
 
     if media_policy == "still_only":
@@ -454,14 +456,16 @@ def _materialize_run_media(
             voxel_path=voxel_path,
             media_dir=media_dir,
             tracer=tracer,
+            low_fidelity=(media_policy == "low_fidelity_preview"),
         )
         manifest["preview_video_path"] = str(preview_video_path) if preview_video_path else None
         manifest["media_status"] = "preview_rendered" if preview_video_path else "preview_skipped"
-    except Exception as exc:
+    except (RuntimeError, FileNotFoundError, OSError, subprocess.CalledProcessError) as exc:
         if media_policy == "require_preview":
             raise
         manifest["media_status"] = "preview_skipped"
         manifest["preview_skip_reason"] = str(exc)
+        manifest["preview_skip_exception_type"] = type(exc).__name__
 
     _write_json(media_manifest_path, manifest)
     manifest["media_manifest_path"] = str(media_manifest_path)
@@ -476,6 +480,7 @@ def _materialize_run_preview(
     voxel_path: Path,
     media_dir: Path,
     tracer: LongitudinalTracerSummary | None,
+    low_fidelity: bool = False,
 ) -> Path | None:
     if (
         isinstance(scenario, LongitudinalScenarioConfig)
@@ -488,6 +493,10 @@ def _materialize_run_preview(
             tracer=tracer,
             summary=summary,
             media_dir=media_dir,
+            width=640 if low_fidelity else 854,
+            height=360 if low_fidelity else 480,
+            fps=8 if low_fidelity else 10,
+            max_wall_time_s=45.0 if low_fidelity else 180.0,
         )
         return Path(artifacts.preview_video_path)
 
@@ -496,6 +505,12 @@ def _materialize_run_preview(
             scenario=scenario,
             fields=fields,
             media_dir=media_dir,
+            width=640 if low_fidelity else 854,
+            height=360 if low_fidelity else 480,
+            fps=12 if low_fidelity else 24,
+            frame_count=60 if low_fidelity else 144,
+            particle_count=72 if low_fidelity else 220,
+            trail_length=10 if low_fidelity else 16,
         )
         manifest = json.loads(Path(artifacts.manifest_path).read_text(encoding="utf-8"))
         poster_path = manifest.get("poster_path")
@@ -542,7 +557,7 @@ def _materialize_run_preview(
 
     return write_slideshow_preview(
         ffmpeg_path=ffmpeg_path,
-        fps=12,
+        fps=8 if low_fidelity else 12,
         scenes=[(str(path), duration_s) for path, duration_s in rasterized_scenes],
         output_path=media_dir / "preview.mp4",
     )

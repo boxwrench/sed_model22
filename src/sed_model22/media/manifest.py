@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -17,6 +19,30 @@ class RenderedCaseArtifact(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class VisualSceneCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    model_form: str
+    still_filename: str
+    highlighted_metrics: dict[str, object] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class VisualScene(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scene_type: Literal["single_case_voxel_scene", "comparison_voxel_scene"]
+    title: str
+    subtitle: str = ""
+    narrative: str = ""
+    focus_points: list[str] = Field(default_factory=list)
+    executive_summary: list[str] = Field(default_factory=list)
+    comparison_lines: list[str] = Field(default_factory=list)
+    warning_lines: list[str] = Field(default_factory=list)
+    cases: list[VisualSceneCase] = Field(default_factory=list)
+
+
 class StillRenderArtifacts(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -25,6 +51,7 @@ class StillRenderArtifacts(BaseModel):
     output_root: str
     comparison_html_path: str | None = None
     manifest_path: str
+    scene_manifest_path: str | None = None
     cases: list[RenderedCaseArtifact]
     comparison_lines: list[str] = Field(default_factory=list)
     warning_lines: list[str] = Field(default_factory=list)
@@ -41,6 +68,7 @@ class PreviewArtifacts(BaseModel):
     warnings_card_path: str
     poster_path: str
     scene_sequence_path: str
+    scene_manifest_path: str | None = None
     preview_video_path: str | None = None
     ffmpeg_path: str | None = None
 

@@ -9,7 +9,10 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 
 from .config import ComparisonStudyConfig, load_scenario, load_study
-from .run import materialize_run, override_scenario_flow_rate, load_summary
+from .media.manifest import write_manifest
+from .media.render_preview import materialize_preview_from_stills
+from .media.render_still import MediaCaseTemplate, MediaTemplate, PreparedMediaCase, render_prepared_media_cases
+from .run import load_fields, load_scenario_snapshot, load_summary, materialize_run, override_scenario_flow_rate
 
 
 class ComparisonStudyArtifacts(BaseModel):
@@ -19,6 +22,8 @@ class ComparisonStudyArtifacts(BaseModel):
     summary_path: str
     csv_path: str
     report_path: str
+    media_root: str | None = None
+    media_manifest_path: str | None = None
     run_count: int
 
 
@@ -88,12 +93,21 @@ def run_comparison_study(study_path: str | Path) -> ComparisonStudyArtifacts:
     )
     _write_comparison_csv(csv_path, rows, threshold_columns)
     _write_comparison_report(report_path, study, study_dir, rows, threshold_columns, case_order, flow_order)
+    media_root, media_manifest_path = _materialize_study_media(
+        study=study,
+        study_dir=study_dir,
+        rows=rows,
+        run_details=run_details,
+        case_order=case_order,
+    )
 
     return ComparisonStudyArtifacts(
         study_dir=str(study_dir),
         summary_path=str(summary_path),
         csv_path=str(csv_path),
         report_path=str(report_path),
+        media_root=str(media_root) if media_root else None,
+        media_manifest_path=str(media_manifest_path) if media_manifest_path else None,
         run_count=len(rows),
     )
 
@@ -251,6 +265,119 @@ def _write_comparison_report(
         )
 
     report_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _materialize_study_media(
+    *,
+    study: ComparisonStudyConfig,
+    study_dir: Path,
+    rows: list[dict[str, object]],
+    run_details: list[dict[str, object]],
+    case_order: list[str],
+) -> tuple[Path | None, Path | None]:
+    media_root = study_dir / "media"
+    media_root.mkdir(parents=True, exist_ok=True)
+    packages: list[dict[str, object]] = []
+
+    for flow in study.flows:
+        prepared_cases: list[PreparedMediaCase] = []
+        for case_label in case_order:
+            detail = next(
+                (
+                    item
+                    for item in run_details
+                    if item["flow_label"] == flow.label and item["case_label"] == case_label
+                ),
+                None,
+            )
+            if detail is None:
+                continue
+            run_dir = Path(str(detail["run_dir"]))
+            prepared_cases.append(
+                PreparedMediaCase(
+                    label=case_label,
+                    scenario_path=str(detail["scenario_path"]),
+                    scenario_snapshot=load_scenario_snapshot(run_dir),
+                    fields=load_fields(run_dir),
+                    summary=load_summary(run_dir),
+                )
+            )
+
+        if not prepared_cases:
+            continue
+
+        template = _study_flow_media_template(study, flow.label, flow.flow_rate_m3_s, prepared_cases)
+        output_root = media_root / _slugify(flow.label)
+        still_artifacts = render_prepared_media_cases(
+            template=template,
+            prepared_cases=prepared_cases,
+            output_root=output_root,
+        )
+        preview_artifacts = materialize_preview_from_stills(
+            still_artifacts=still_artifacts,
+            template_id=template.template_id,
+            title=template.title,
+            subtitle=template.subtitle or "Study comparison preview",
+            fps=10,
+        )
+        packages.append(
+            {
+                "flow_label": flow.label,
+                "flow_rate_m3_s": flow.flow_rate_m3_s,
+                "output_root": still_artifacts.output_root,
+                "comparison_html_path": still_artifacts.comparison_html_path,
+                "scene_manifest_path": still_artifacts.scene_manifest_path,
+                "preview_root": preview_artifacts.preview_root,
+                "preview_manifest_path": preview_artifacts.manifest_path,
+                "preview_video_path": preview_artifacts.preview_video_path,
+            }
+        )
+
+    media_manifest_path = media_root / "manifest.json"
+    write_manifest(
+        media_manifest_path,
+        {
+            "study_id": study.study_id,
+            "title": study.title,
+            "flow_media": packages,
+        },
+    )
+    return media_root, media_manifest_path
+
+
+def _study_flow_media_template(
+    study: ComparisonStudyConfig,
+    flow_label: str,
+    flow_rate_m3_s: float,
+    prepared_cases: list[PreparedMediaCase],
+) -> MediaTemplate:
+    title = f"{study.title} ({flow_label})"
+    subtitle = f"{flow_label.title()} flow comparison at {flow_rate_m3_s:.3f} m3/s."
+    narrative = study.description or (
+        "Use the same voxel view for both cases so leadership can see directional hydraulic changes"
+        " before committing to higher-fidelity study or capital work."
+    )
+    focus_points = [
+        "transition-wall impact",
+        "redistribution quality",
+        "launder approach risk",
+        "screening-only confidence",
+    ]
+    return MediaTemplate(
+        template_id=f"{study.study_id}_{_slugify(flow_label)}",
+        title=title,
+        subtitle=subtitle,
+        narrative=narrative,
+        focus_points=focus_points,
+        output_slug=f"{study.study_id}_{_slugify(flow_label)}",
+        cases=[
+            MediaCaseTemplate(
+                label=case.label,
+                scenario_path=case.scenario_path,
+            )
+            for case in prepared_cases
+        ],
+    )
 
 
 def _comparison_table(

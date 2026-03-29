@@ -1,4 +1,5 @@
 import io
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -137,6 +138,37 @@ class CliTests(unittest.TestCase):
             output = stdout.getvalue()
             self.assertIn("RTD proxy model:", output)
             self.assertIn("RTD proxy breakthrough:", output)
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
+
+    def test_low_fidelity_media_policy_uses_fast_preview_profile(self) -> None:
+        scratch = self._scratch_dir()
+        try:
+            run_root = scratch / "runs"
+            stdout = io.StringIO()
+
+            with redirect_stdout(stdout):
+                exit_code = main(
+                    [
+                        "run-hydraulics",
+                        str(SCENARIO_PATH),
+                        "--run-root",
+                        str(run_root),
+                        "--media-policy",
+                        "low_fidelity_preview",
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            run_dir = next(run_root.iterdir())
+            media_manifest = json.loads((run_dir / "media" / "manifest.json").read_text(encoding="utf-8"))
+            pathline_manifest = json.loads(
+                (run_dir / "media" / "pathline_manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual("low_fidelity_preview", media_manifest["media_policy"])
+            self.assertEqual("low_fidelity", media_manifest["preview_profile"])
+            self.assertEqual(60, pathline_manifest["frame_count"])
+            self.assertEqual(72, pathline_manifest["particle_count"])
         finally:
             shutil.rmtree(scratch, ignore_errors=True)
 
