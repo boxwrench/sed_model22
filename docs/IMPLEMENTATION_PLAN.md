@@ -19,6 +19,9 @@ Project state:
 - the visualization research pass is now in and the first accepted animation direction is deterministic particle pathlines
 - static streamline stills are the accepted report companion
 - detention-based time compression is now an accepted requirement for short basin previews
+- study-level media packaging now exists for `compare-study` outputs
+- a geometry intake template now exists under `templates/` for drawing-to-scenario capture
+- the next-fidelity direction is now documented in `docs/V0_3_ROADMAP.md`
 - dye-pulse and more elaborate visualization methods remain deferred until their proxy framing is clearly bounded
 
 Current implementation target:
@@ -33,6 +36,7 @@ Current implementation target:
 Latest verification checkpoint:
 
 - `PYTHONPATH=src python3 -m unittest discover -s tests -v`
+- latest full-suite checkpoint: 34 passing tests on 2026-03-29
 - media and CLI subsets were rechecked during preview-animation work on 2026-03-27:
   - `python -m unittest tests.test_media -v`
   - `python -m unittest tests.test_cli -v`
@@ -148,12 +152,12 @@ Tasks:
 
 If work resumes after a break, do these next in order:
 
-1. Build or refine better test models chosen for hydraulic and visualization legibility, not just basic solver coverage.
-2. Refine the accepted particle-pathline preview with detention-based time compression, better seeding, and cleaner presentation styling.
-3. Keep static streamline still export aligned as the paired report-facing figure.
-4. Add mesh sensitivity smoke checks against the current V0.1 solver.
-5. Add more comparison-oriented engineering metrics and scenario summaries.
-6. Keep `docs/research/CANON.md` aligned with whatever the next solver boundary becomes.
+1. Extend the longitudinal schema and solver for explicit current-state bypass geometry using the new intake geometry template.
+2. Refresh the current-state scenario and rerun the shipped design-versus-current study on the revised geometry.
+3. Add mesh sensitivity smoke checks against the revised comparison geometry.
+4. Keep improving the study-level media package, especially a flow-level landing page across low / typical / high flow.
+5. Start the limited multi-class solids design work defined in `docs/V0_3_ROADMAP.md`.
+6. Keep `docs/research/CANON.md` and the roadmap docs aligned with the active solver boundary.
 
 ## Session Restart Checklist
 
@@ -167,7 +171,9 @@ Before starting the next work block:
    - `docs/research/source-notes/sed_floc_basin_simulator_master_package.md`
    - `docs/research/source-notes/2D hydraulic simulator.md`
    - `docs/research/source-notes/Minimum viable physics.md`
-6. Run the current smoke tests:
+6. Read `docs/V0_3_ROADMAP.md` if the next session is about bypass geometry, solids consequence work, or the next fidelity jump.
+7. Review `templates/intake_geometry_survey.yaml` before translating new drawing-derived geometry.
+8. Run the current smoke tests:
    - `PYTHONPATH=src python3 -m unittest discover -s tests -v`
 
 ## Current Constraints
