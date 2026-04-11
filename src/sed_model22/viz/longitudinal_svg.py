@@ -100,6 +100,8 @@ def write_longitudinal_layout_svg(
 def build_longitudinal_velocity_heatmap_svg(
     scenario: LongitudinalScenarioConfig,
     fields: LongitudinalFieldData,
+    *,
+    shared_vmax: float | None = None,
 ) -> str:
     margin = 40
     basin_width_px = 980
@@ -113,9 +115,14 @@ def build_longitudinal_velocity_heatmap_svg(
     def sz(z_m: float) -> float:
         return margin + basin_height_px - (z_m / scenario.geometry.water_depth_m) * basin_height_px
 
-    max_speed = max((max(row) for row in fields.speed_m_s), default=0.0)
-    if max_speed <= 0.0:
-        max_speed = 1.0
+    if shared_vmax is not None and shared_vmax > 0.0:
+        max_speed = shared_vmax
+        scale_note = f"Shared scale: {shared_vmax:.4f} m/s max"
+    else:
+        max_speed = max((max(row) for row in fields.speed_m_s), default=0.0)
+        if max_speed <= 0.0:
+            max_speed = 1.0
+        scale_note = f"Peak speed: {max_speed:.4f} m/s"
 
     dx_px = basin_width_px / len(fields.x_centers_m)
     dz_px = basin_height_px / len(fields.z_centers_m)
@@ -135,7 +142,7 @@ def build_longitudinal_velocity_heatmap_svg(
         f"<svg xmlns='http://www.w3.org/2000/svg' width='{svg_width}' height='{svg_height}' viewBox='0 0 {svg_width} {svg_height}'>",
         "  <rect width='100%' height='100%' fill='#f8fafc' />",
         f"  <text x='{margin}' y='24' font-family='monospace' font-size='20' fill='#0f172a'>{scenario.metadata.title} velocity magnitude</text>",
-        f"  <text x='{margin}' y='46' font-family='monospace' font-size='12' fill='#334155'>Peak speed: {max_speed:.4f} m/s</text>",
+        f"  <text x='{margin}' y='46' font-family='monospace' font-size='12' fill='#334155'>{scale_note}</text>",
         f"  <rect x='{margin}' y='{margin}' width='{basin_width_px}' height='{basin_height_px}' fill='#e2e8f0' stroke='#0f172a' stroke-width='3' />",
         *rects,
         f"  <text x='{margin}' y='{svg_height - 18}' font-family='monospace' font-size='12' fill='#334155'>Blue is lower speed. Red is higher speed.</text>",
@@ -148,10 +155,12 @@ def write_longitudinal_velocity_heatmap_svg(
     scenario: LongitudinalScenarioConfig,
     fields: LongitudinalFieldData,
     output_path: str | Path,
+    *,
+    shared_vmax: float | None = None,
 ) -> Path:
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(build_longitudinal_velocity_heatmap_svg(scenario, fields), encoding="utf-8")
+    destination.write_text(build_longitudinal_velocity_heatmap_svg(scenario, fields, shared_vmax=shared_vmax), encoding="utf-8")
     return destination
 
 

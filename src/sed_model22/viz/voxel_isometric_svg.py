@@ -15,6 +15,8 @@ from ..solver.longitudinal import LongitudinalFieldData
 def build_longitudinal_voxel_isometric_svg(
     scenario: LongitudinalScenarioConfig,
     fields: LongitudinalFieldData,
+    *,
+    shared_vmax: float | None = None,
 ) -> str:
     x_stride = max(1, len(fields.x_centers_m) // 18)
     z_stride = max(1, len(fields.z_centers_m) // 10)
@@ -30,9 +32,14 @@ def build_longitudinal_voxel_isometric_svg(
     svg_width = 1400
     svg_height = 900
 
-    max_speed = max((max(row) for row in fields.speed_m_s), default=1.0)
-    if max_speed <= 0.0:
-        max_speed = 1.0
+    if shared_vmax is not None and shared_vmax > 0.0:
+        max_speed = shared_vmax
+        scale_label = f"Shared scale: {shared_vmax:.4f} m/s max"
+    else:
+        max_speed = max((max(row) for row in fields.speed_m_s), default=1.0)
+        if max_speed <= 0.0:
+            max_speed = 1.0
+        scale_label = "Run-normalized for this screening case"
 
     voxel_shapes: list[tuple[float, str]] = []
     for x_position, i in enumerate(x_indices):
@@ -95,7 +102,7 @@ def build_longitudinal_voxel_isometric_svg(
         )
     )
     layers.extend(_annotation_svg(scenario, x_count, width_voxels, z_count, tile_width, tile_height, z_scale, origin_x, origin_y))
-    layers.extend(_legend_svg(svg_width))
+    layers.extend(_legend_svg(svg_width, scale_label))
     layers.append("</svg>")
     return "\n".join(layers)
 
@@ -104,11 +111,13 @@ def write_longitudinal_voxel_isometric_svg(
     scenario: LongitudinalScenarioConfig,
     fields: LongitudinalFieldData,
     output_path: str | Path,
+    *,
+    shared_vmax: float | None = None,
 ) -> Path:
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(
-        build_longitudinal_voxel_isometric_svg(scenario, fields),
+        build_longitudinal_voxel_isometric_svg(scenario, fields, shared_vmax=shared_vmax),
         encoding="utf-8",
     )
     return destination
@@ -353,7 +362,7 @@ def _annotation_svg(
     return layers
 
 
-def _legend_svg(svg_width: int) -> list[str]:
+def _legend_svg(svg_width: int, scale_label: str = "Run-normalized for this screening case") -> list[str]:
     left = svg_width - 292
     top = 506
     colors = [
@@ -365,7 +374,7 @@ def _legend_svg(svg_width: int) -> list[str]:
     layers = [
         f"  <rect x='{left}' y='{top}' width='228' height='150' rx='12' fill='#ffffff' stroke='#d7e2ee' stroke-width='1.5' />",
         f"  <text x='{left + 14}' y='{top + 24}' font-family='monospace' font-size='14' font-weight='700' fill='#0f172a'>Relative Speed Band</text>",
-        f"  <text x='{left + 14}' y='{top + 42}' font-family='monospace' font-size='11' fill='#475569'>Run-normalized for this screening case</text>",
+        f"  <text x='{left + 14}' y='{top + 42}' font-family='monospace' font-size='11' fill='#475569'>{scale_label}</text>",
     ]
     for index, (label, color) in enumerate(colors):
         y = top + 58 + index * 22

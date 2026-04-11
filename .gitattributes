@@ -1,0 +1,18 @@
+# Normalize all text files to LF on commit
+* text=auto eol=lf
+
+# Explicitly binary — never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.mp4 binary
+*.mov binary
+*.zip binary
+*.gz binary
+*.pyc binary

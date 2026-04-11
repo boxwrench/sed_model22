@@ -118,15 +118,34 @@ Tasks:
 - [x] add mass-conservation checks
 - [x] add an empty rectangular basin verification case
 - [x] add a single-baffle verification case
-- [ ] add mesh sensitivity smoke checks
+- [ ] add mesh sensitivity smoke checks (v0.2 geometry; prerequisite for V0.3)
 - [x] connect solver outputs to comparison-ready engineering metrics
 - [x] add a simple multi-scenario comparison workflow
+- [x] document RTD proxy constants and plate-settler conductance minimums (solver/longitudinal.py)
+- [x] add shared color scale for comparison renders (render_still.py passes shared_vmax)
+- [ ] add solver verification tests against known analytical solutions
+  - v0.1: mass balance in empty basin, symmetric flow in symmetric basin
+  - v0.2: uniform conductance → expected head gradient; perforated baffle → reduced downstream velocity
+  - target: ≥3 physics-meaningful assertions per solver, runs in <30s total
+  - files: tests/test_solver_verification.py, tests/test_longitudinal_solver_verification.py
+- [ ] add metrics unit tests with synthetic inputs
+  - cover dead zone fraction, velocity uniformity index, Morrill index
+  - fast, isolated, formula-correctness focused (no full solver run required)
+  - file: tests/test_metrics.py
+- [ ] add function-level docstrings to solver code
+  - state the PDE being solved (Laplace ∇²h = 0) and iteration scheme (Gauss-Seidel with SOR)
+  - files: src/sed_model22/solver/hydraulics.py, src/sed_model22/solver/longitudinal.py, src/sed_model22/metrics/longitudinal.py
 
 Definition of done:
 
-- the first solver has basic credibility checks
+- solvers have basic credibility checks and pass verification tests against known solutions
+- metrics are unit-tested with synthetic inputs
+- solver code is self-documenting enough to audit without reverse-engineering the physics
 - output summaries can distinguish between simple geometry cases
 - at least one comparison-oriented workflow exists for alternative configurations
+
+**V0.3 is gated on M4 completion.** The bypass geometry work requires a credible hydraulic baseline.
+Do not begin V0.3 schema or solver work until the remaining M4 tasks above are done.
 
 ### M5. Tracer and Residence-Time Layer
 
@@ -152,12 +171,13 @@ Tasks:
 
 If work resumes after a break, do these next in order:
 
-1. Extend the longitudinal schema and solver for explicit current-state bypass geometry using the new intake geometry template.
-2. Refresh the current-state scenario and rerun the shipped design-versus-current study on the revised geometry.
-3. Add mesh sensitivity smoke checks against the revised comparison geometry.
-4. Keep improving the study-level media package, especially a flow-level landing page across low / typical / high flow.
-5. Start the limited multi-class solids design work defined in `docs/V0_3_ROADMAP.md`.
-6. Keep `docs/research/CANON.md` and the roadmap docs aligned with the active solver boundary.
+1. Complete the remaining M4 tasks (solver verification tests, metrics unit tests, solver docstrings) — required before V0.3.
+2. Add mesh sensitivity smoke checks for the current v0.2 comparison geometry.
+3. Extend the longitudinal schema and solver for explicit current-state bypass geometry using the new intake geometry template.
+4. Refresh the current-state scenario and rerun the shipped design-versus-current study on the revised geometry.
+5. Keep improving the study-level media package, especially a flow-level landing page across low / typical / high flow.
+6. Start the limited multi-class solids design work defined in `docs/V0_3_ROADMAP.md`.
+7. Keep `docs/research/CANON.md` and the roadmap docs aligned with the active solver boundary.
 
 ## Session Restart Checklist
 

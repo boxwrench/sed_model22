@@ -237,6 +237,21 @@ def simulate_longitudinal_tracer(
     mesh: LongitudinalMeshSummary,
     fields: LongitudinalFieldData,
 ) -> LongitudinalTracerSummary:
+    """Compute a deterministic RTD proxy from the steady longitudinal screening field.
+
+    This is NOT a transient tracer transport simulation. It generates a synthetic
+    logistic CDF breakthrough curve parameterized by field-derived quantities
+    (effective travel time, velocity uniformity, dead zone fraction, headloss,
+    launder upwelling). The result is a screening proxy for comparison purposes only.
+
+    The weighting coefficients below are empirically tuned to produce RTD curves
+    that are directionally consistent with the expected behavior of rectangular
+    sedimentation basins under the Camp-Dobbins screening model framework
+    (ref: Camp 1955, Water & Sewage Works; Tchobanoglous et al., Wastewater Engineering,
+    4th ed., Table 5-5). They have not been calibrated against tracer field data for
+    this specific plant and should be treated as directional proxies, not calibrated
+    predictions.
+    """
     theoretical_detention_time_s = (
         scenario.geometry.basin_length_m * scenario.geometry.basin_width_m * scenario.geometry.water_depth_m
     ) / scenario.hydraulics.flow_rate_m3_s
@@ -263,10 +278,21 @@ def simulate_longitudinal_tracer(
     headloss_factor = max(0.0, transition_headloss_m / max(scenario.geometry.water_depth_m, positive_floor))
     upward_factor = launder_peak_upward_velocity_m_s / max(max_speed, positive_floor)
 
+    # t50 floor: basin cannot short-circuit to t50 below 25% of theoretical detention
+    # time regardless of field conditions. Headloss factor adds delay proportional to
+    # transition wall resistance (0.12 is empirically tuned; see function docstring).
     nominal_t50_s = max(
         0.25 * theoretical_detention_time_s,
         effective_travel_time_s * (1.0 + (0.12 * headloss_factor)),
     )
+    # Spread fraction controls RTD curve width (higher = broader, more dispersed curve).
+    # Each term contributes a field-derived penalty:
+    #   0.10  — base spread: minimum turbulent dispersion in any real basin
+    #   0.30  — velocity non-uniformity penalty (column-to-column speed variation)
+    #   0.22  — dead zone penalty (stagnant volume fraction)
+    #   0.08  — transition headloss penalty (wall resistance forcing bypass redistribution)
+    #   0.05  — launder upwelling penalty (high upward velocity implies concentrated exit)
+    # Weights are empirically tuned proxies; see function docstring for basis.
     spread_fraction = (
         0.10
         + (0.30 * (1.0 - mean_column_uniformity))
@@ -274,6 +300,8 @@ def simulate_longitudinal_tracer(
         + (0.08 * headloss_factor)
         + (0.05 * upward_factor)
     )
+    # Clamp spread fraction: 0.08 prevents an unrealistically sharp curve even in
+    # near-ideal basins; 0.40 caps dispersion to avoid non-physical flat RTDs.
     spread_fraction = max(0.08, min(0.40, spread_fraction))
 
     sample_count = max(101, min(241, scenario.numerics.nx * 2))
@@ -285,8 +313,15 @@ def simulate_longitudinal_tracer(
         for index in range(sample_count)
     ]
     t50_fraction = nominal_t50_s / max_time_s
+    # Clamp t50 position within the time window: 0.20–0.80 keeps the logistic CDF
+    # inflection point well inside the sampled interval so t10/t50/t90 are all
+    # resolvable from the generated curve.
     t50_fraction = max(0.20, min(0.80, t50_fraction))
     center_s = t50_fraction * max_time_s
+    # Steepness controls the slope of the logistic CDF at the inflection point.
+    # Base value 5.0 gives a moderately broad curve; the spread-fraction term
+    # (range 0–6.0) sharpens the curve as spread_fraction decreases toward 0.08.
+    # Empirically tuned; see function docstring.
     steepness = 5.0 + (6.0 * (1.0 - spread_fraction))
     outlet_history = _normalized_sigmoid_history(time_points, center_s, max_time_s, steepness)
     monotonic_history = _cumulative_max(outlet_history)
@@ -418,6 +453,11 @@ def _apply_feature_conductance_modifiers(
 
         if isinstance(feature, PlateSettlerZoneFeatureConfig):
             void_fraction = feature.plate_spacing_m / (feature.plate_spacing_m + feature.plate_thickness_m)
+            # Conductance floors prevent zero-conductance cells that stall the
+            # Gauss-Seidel solve. 0.02 (parallel) and 0.005 (perpendicular) are
+            # practical minimums empirically chosen to keep the solver convergent
+            # for high-resistance plate configurations; they are not physically
+            # derived from plate geometry.
             k_parallel = max(0.02, void_fraction / feature.resistance_scale)
             k_perp = max(0.005, k_parallel * feature.cross_flow_factor)
             theta = math.radians(feature.plate_angle_deg)

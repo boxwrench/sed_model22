@@ -130,9 +130,24 @@ def render_prepared_media_cases(
     rendered_cases: list[RenderedCaseArtifact] = []
     case_summaries: list[dict[str, object]] = []
 
+    # Compute a shared color ceiling for comparison renders so that visual speed
+    # differences between cases are real, not artifacts of independent normalization.
+    # Per-run renders (single case) still auto-scale.
+    shared_vmax: float | None = None
+    if len(prepared_cases) >= 2:
+        all_speeds = [
+            speed
+            for case in prepared_cases
+            for row in case.fields.speed_m_s
+            for speed in row
+        ]
+        candidate = max(all_speeds, default=0.0)
+        if candidate > 0.0:
+            shared_vmax = candidate
+
     for index, case in enumerate(prepared_cases, start=1):
         still_path = root / f"{index:02d}_{_slugify(case.label)}_voxel_isometric.svg"
-        model_form = _write_case_still(case.scenario_snapshot, case.fields, still_path)
+        model_form = _write_case_still(case.scenario_snapshot, case.fields, still_path, shared_vmax=shared_vmax)
         case_summaries.append(case.summary)
         rendered_cases.append(
             RenderedCaseArtifact(
@@ -185,12 +200,14 @@ def _write_case_still(
     scenario_snapshot: ScenarioConfig,
     fields: HydraulicFieldData | LongitudinalFieldData,
     still_path: Path,
+    *,
+    shared_vmax: float | None = None,
 ) -> str:
     if isinstance(scenario_snapshot, LongitudinalScenarioConfig):
-        write_longitudinal_voxel_isometric_svg(scenario_snapshot, fields, still_path)
+        write_longitudinal_voxel_isometric_svg(scenario_snapshot, fields, still_path, shared_vmax=shared_vmax)
         return "v0.2 longitudinal 2.5D voxel view"
     if isinstance(scenario_snapshot, PlanViewScenarioConfig):
-        write_plan_view_voxel_isometric_svg(scenario_snapshot, fields, still_path)
+        write_plan_view_voxel_isometric_svg(scenario_snapshot, fields, still_path, shared_vmax=shared_vmax)
         return "v0.1 plan-view 2.5D voxel view"
     raise TypeError(f"unsupported scenario snapshot type: {type(scenario_snapshot)!r}")
 

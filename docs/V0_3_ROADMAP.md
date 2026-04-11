@@ -183,8 +183,39 @@ Use whatever becomes available later:
 
 to tighten confidence in the screening workflow.
 
+## Pre-V0.3 Engineering Hardening
+
+These items come from a project review (April 2026) and must be done before V0.3 solver work begins.
+They are tracked as M4 remaining tasks in `docs/IMPLEMENTATION_PLAN.md`.
+
+**Required before V0.3 schema work starts:**
+
+- Solver verification tests against known analytical solutions (v0.1 and v0.2)
+- Metrics unit tests with synthetic inputs (dead zone fraction, uniformity index, Morrill index)
+- Function-level docstrings in solver files naming the PDE and iteration scheme
+- Mesh sensitivity smoke checks on current v0.2 comparison geometry
+
+**Should-do alongside V0.3 (medium priority):**
+
+- Prescriptive validation error messages — wrap raw Pydantic errors with field path + suggested fix
+  (files: `src/sed_model22/cli.py`, `src/sed_model22/config.py`)
+- Extract HTML templates from Python string literals to `src/sed_model22/templates/`
+  (currently: 864-line operator report in `viz/operator_report.py`, 230-line layout in `media/layouts.py`)
+- Define a `SolverProtocol` ABC before a third solver is added
+  (file: `src/sed_model22/solver/protocol.py`)
+- Refactor `study.py` to support N-way comparison (not just 2 cases)
+  — the design-spec / current-state / proposed-fix workflow will need 3 cases
+
+**Backlog (lower priority, after V0.3):**
+
+- `stderr` progress logging at key solver stages (mesh built, converged, artifacts written)
+- Rename `operator_report.html` → `engineering_screening_report.html` (content is engineering diagnostics, not operator guidance)
+- Parametrized tests across low / typical / high flow rates
+- Getting-started guide (`docs/GETTING_STARTED.md`) and metrics reference (`docs/METRICS_REFERENCE.md`)
+
 ## Recommended Execution Order
 
+0. Complete pre-V0.3 engineering hardening (see above).
 1. Extend schema for bypass-path geometry.
 2. Implement explicit bypass-path solver support.
 3. Refresh the current-state scenario using the cleaned intake geometry workflow.
