@@ -7,6 +7,8 @@ This is the working task list for the repo. It should answer two questions quick
 
 Update this file when a milestone starts, finishes, or changes shape.
 
+For the fastest orientation, read `docs/SESSION_START_CONTEXT.md` first and `docs/ROADMAP.md` second.
+
 ## Current Status
 
 Project state:
@@ -15,31 +17,35 @@ Project state:
 - research notes are organized and indexed
 - CLI/config/run-artifact workflow exists
 - first real hydraulic screening solve exists
-- repo also now has an early run-bundle media path, voxel still generation, and first-pass preview-video generation
-- the visualization research pass is now in and the first accepted animation direction is deterministic particle pathlines
+- run-bundle media path, voxel still generation, and preview-video generation exist
+- deterministic particle pathlines are the accepted first animation direction
 - static streamline stills are the accepted report companion
-- detention-based time compression is now an accepted requirement for short basin previews
-- study-level media packaging now exists for `compare-study` outputs
-- a geometry intake template now exists under `templates/` for drawing-to-scenario capture
-- the next-fidelity direction is now documented in `docs/V0_3_ROADMAP.md`
-- dye-pulse and more elaborate visualization methods remain deferred until their proxy framing is clearly bounded
+- study-level media packaging exists for `compare-study`
+- a geometry intake template exists under `templates/` for drawing-to-scenario capture
+- `v0.1` plan-view and `v0.2` longitudinal workflows both exist
+- `v0.3` is now narrowed to explicit bypass hydraulics
+- solids consequence modeling is deferred to `v0.4`
 
 Current implementation target:
 
-- dual screening workflows:
-  - `v0.1` plan-view hydraulic sandbox
-  - `v0.2` longitudinal design-vs-current comparison workflow
-- structured Cartesian grid
-- YAML scenario input
-- CLI-driven workflow
+- finish M4 credibility hardening before any bypass or solids work
+- keep the first interface CLI + YAML
+- make outputs useful for plant operations, legible to operators, legible to managers, and suitable for portfolio review
+- preserve transparent screening claims rather than implying CFD, calibration, or digital-twin behavior
 
 Latest verification checkpoint:
 
 - `PYTHONPATH=src python3 -m unittest discover -s tests -v`
-- latest full-suite checkpoint: 34 passing tests on 2026-03-29
+- latest full-suite checkpoint: 34 passing tests outside sandbox at the latest code checkpoint
 - media and CLI subsets were rechecked during preview-animation work on 2026-03-27:
   - `python -m unittest tests.test_media -v`
   - `python -m unittest tests.test_cli -v`
+
+Current risk:
+
+- the shipped `v0.2` design-vs-current study is workflow-valid but numerically weak
+- convergence and discharge-balance issues mean the current study should be labeled `directional_only` or `weak` until quality tiers and M4 hardening support stronger interpretation
+- current-state bypass geometry is not verified and is still represented by proxy geometry
 
 ## Milestones
 
@@ -56,6 +62,10 @@ Tasks:
 - [x] add CLI scaffold
 - [x] add baseline scenario
 - [x] add smoke tests
+
+Definition of done:
+
+- repo has a coherent package, docs, scenarios, and tests structure
 
 ### M1. Research Synthesis
 
@@ -109,91 +119,131 @@ Definition of done:
 - `run-hydraulics` performs a real solve for the simplest supported case
 - results can be inspected without changing repo structure again
 
-### M4. Verification and Engineering Metrics
+### M4. Credibility Hardening
 
 Status: in progress
+
+This milestone gates `v0.3`. Do not begin bypass schema work, bypass solver work, or solids work until M4 is complete.
 
 Tasks:
 
 - [x] add mass-conservation checks
 - [x] add an empty rectangular basin verification case
 - [x] add a single-baffle verification case
-- [ ] add mesh sensitivity smoke checks (v0.2 geometry; prerequisite for V0.3)
 - [x] connect solver outputs to comparison-ready engineering metrics
 - [x] add a simple multi-scenario comparison workflow
-- [x] document RTD proxy constants and plate-settler conductance minimums (solver/longitudinal.py)
-- [x] add shared color scale for comparison renders (render_still.py passes shared_vmax)
+- [x] document RTD proxy constants and plate-settler conductance minimums in solver code
+- [x] add shared color scale for comparison renders
 - [ ] add solver verification tests against known analytical solutions
-  - v0.1: mass balance in empty basin, symmetric flow in symmetric basin
-  - v0.2: uniform conductance → expected head gradient; perforated baffle → reduced downstream velocity
-  - target: ≥3 physics-meaningful assertions per solver, runs in <30s total
-  - files: tests/test_solver_verification.py, tests/test_longitudinal_solver_verification.py
+  - `v0.1`: mass balance in empty basin, symmetric flow in symmetric basin
+  - `v0.2`: uniform conductance gives expected head gradient; perforated baffle reduces downstream velocity
+  - target: at least 3 physics-meaningful assertions per solver, runs in under 30 seconds total
+  - expected files: `tests/test_solver_verification.py`, `tests/test_longitudinal_solver_verification.py`
 - [ ] add metrics unit tests with synthetic inputs
-  - cover dead zone fraction, velocity uniformity index, Morrill index
-  - fast, isolated, formula-correctness focused (no full solver run required)
-  - file: tests/test_metrics.py
+  - cover dead zone fraction, velocity uniformity index, and Morrill index
+  - fast, isolated, formula-correctness focused
+  - expected file: `tests/test_metrics.py`
 - [ ] add function-level docstrings to solver code
-  - state the PDE being solved (Laplace ∇²h = 0) and iteration scheme (Gauss-Seidel with SOR)
-  - files: src/sed_model22/solver/hydraulics.py, src/sed_model22/solver/longitudinal.py, src/sed_model22/metrics/longitudinal.py
+  - name the governing screening equation or proxy being solved
+  - state the iteration scheme and convergence criteria
+  - expected files: `src/sed_model22/solver/hydraulics.py`, `src/sed_model22/solver/longitudinal.py`, `src/sed_model22/metrics/longitudinal.py`
+- [ ] add mesh sensitivity smoke checks for the current `v0.2` comparison geometry
+  - check transition headloss, post-transition velocity uniformity, launder peak upward velocity, `t10`, `t50`, `t90`, and short-circuiting index
+- [ ] design and implement run quality tiers
+  - add `run_quality_tier`
+  - add `quality_reasons`
+  - report `credible`, `directional_only`, or `weak`
+  - ensure weak runs are visibly labeled in summaries and study reports
 
 Definition of done:
 
 - solvers have basic credibility checks and pass verification tests against known solutions
 - metrics are unit-tested with synthetic inputs
 - solver code is self-documenting enough to audit without reverse-engineering the physics
-- output summaries can distinguish between simple geometry cases
-- at least one comparison-oriented workflow exists for alternative configurations
+- output summaries distinguish credible, directional, and weak runs
+- the shipped `v0.2` study cannot silently present weak numerical results as strong conclusions
 
-**V0.3 is gated on M4 completion.** The bypass geometry work requires a credible hydraulic baseline.
-Do not begin V0.3 schema or solver work until the remaining M4 tasks above are done.
+### v0.3. Explicit Bypass Hydraulics
 
-### M5. Tracer and Residence-Time Layer
+Status: gated by M4
 
-Status: later
+Goal:
 
-Tasks:
-
-- [ ] add passive tracer transport on top of the hydraulic field
-- [ ] produce RTD-oriented outputs
-- [ ] add hydraulic efficiency and short-circuiting metrics
-
-### M6. Simplified Solids Layer
-
-Status: later
+- represent the current-state bypass flow path explicitly instead of relying on a lossy blocked-wall proxy
 
 Tasks:
 
-- [ ] add settling proxy terms
-- [ ] support a small number of solids classes
-- [ ] add simple solids-escape risk indicators
+- [ ] verify current-state bypass geometry before encoding it
+- [ ] extend scenario schema for explicit bypass-path geometry
+- [ ] support over, under, side, or serpentine path descriptions where the verified geometry requires them
+- [ ] route flow through the explicit path in the longitudinal solver
+- [ ] add study support for design/current/proposed N-way comparisons
+- [ ] add `baseline_case_label` while preserving current first-case baseline behavior
+- [ ] refresh the current-state scenario and rerun low, typical, and high-flow comparisons
+- [ ] update report interpretation after the revised geometry changes direction or magnitude
+
+Definition of done:
+
+- the current-state model represents the dominant real flow path in geometry
+- design/current/proposed comparison can be run reproducibly
+- outputs remain operator-readable, manager-readable, and quality-tiered
+
+### v0.4. Limited Solids Consequences
+
+Status: later
+
+Goal:
+
+- add class-based settling-risk outputs only after hydraulics and bypass geometry are credible
+
+Tasks:
+
+- [ ] define 3 to 5 transparent settling classes
+- [ ] add class-specific capture or escape risk proxies
+- [ ] carry solids consequence outputs through run summaries and study reports
+- [ ] label solids results as screening consequences, not calibrated removal predictions
+
+Definition of done:
+
+- solids outputs help explain likely operational consequence without claiming calibrated turbidity or finished-water prediction
+
+### Later Operational Expansion
+
+Status: later
+
+Possible tasks:
+
+- [ ] study-level landing page across low, typical, and high flow
+- [ ] pseudo-transient flow sweeps
+- [ ] interactive review pages using media scene contracts
+- [ ] field-informed validation loop
+- [ ] external CFD comparison for validation context
+- [ ] SCADA or real-time integration only after validation supports it
 
 ## Pickup Queue
 
 If work resumes after a break, do these next in order:
 
-1. Complete the remaining M4 tasks (solver verification tests, metrics unit tests, solver docstrings) — required before V0.3.
-2. Add mesh sensitivity smoke checks for the current v0.2 comparison geometry.
-3. Extend the longitudinal schema and solver for explicit current-state bypass geometry using the new intake geometry template.
-4. Refresh the current-state scenario and rerun the shipped design-versus-current study on the revised geometry.
-5. Keep improving the study-level media package, especially a flow-level landing page across low / typical / high flow.
-6. Start the limited multi-class solids design work defined in `docs/V0_3_ROADMAP.md`.
-7. Keep `docs/research/CANON.md` and the roadmap docs aligned with the active solver boundary.
+1. Complete remaining M4 solver verification tests.
+2. Add synthetic metrics unit tests.
+3. Add solver and metrics docstrings that state the screening equations and iteration schemes.
+4. Add mesh sensitivity smoke checks for current `v0.2` comparison geometry.
+5. Add run quality tiers and make weak runs visible in summaries and study reports.
+6. Only after M4 is complete, begin `v0.3` explicit bypass hydraulics.
+7. Defer solids consequence modeling to `v0.4`.
+8. Keep `docs/SESSION_START_CONTEXT.md`, `docs/ROADMAP.md`, and this file aligned as the product boundary changes.
 
 ## Session Restart Checklist
 
 Before starting the next work block:
 
-1. Read `docs/DEVLOG.md`.
-2. Read `docs/research/PRIMER.md`.
-3. Read `docs/research/CANON.md`.
-4. Read this file.
-5. Open the current canonical implementation references:
-   - `docs/research/source-notes/sed_floc_basin_simulator_master_package.md`
-   - `docs/research/source-notes/2D hydraulic simulator.md`
-   - `docs/research/source-notes/Minimum viable physics.md`
-6. Read `docs/V0_3_ROADMAP.md` if the next session is about bypass geometry, solids consequence work, or the next fidelity jump.
-7. Review `templates/intake_geometry_survey.yaml` before translating new drawing-derived geometry.
-8. Run the current smoke tests:
+1. Read `docs/SESSION_START_CONTEXT.md`.
+2. Read `docs/ROADMAP.md`.
+3. Read this file.
+4. Read `docs/research/CANON.md` only when implementation details require the research basis.
+5. Read `docs/V0_3_ROADMAP.md` only after M4 work is complete or when planning bypass hydraulics.
+6. Review `templates/intake_geometry_survey.yaml` before translating drawing-derived geometry.
+7. Run the current smoke tests:
    - `PYTHONPATH=src python3 -m unittest discover -s tests -v`
 
 ## Current Constraints
@@ -201,4 +251,5 @@ Before starting the next work block:
 - The repo should stay custom-Python-first.
 - The first interface remains CLI + YAML.
 - External solvers are supporting references, not the mainline architecture.
-- Avoid adding tracer, solids, or digital-twin behavior before the V0.1 hydraulic core is stable.
+- Avoid adding tracer, solids, or digital-twin behavior beyond the explicit milestone boundary.
+- Avoid new media polish until solver credibility and current-state geometry are strong enough.

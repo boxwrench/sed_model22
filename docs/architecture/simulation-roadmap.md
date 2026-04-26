@@ -1,14 +1,18 @@
 # Simulation Roadmap
 
+The canonical product roadmap is `docs/ROADMAP.md`. This architecture note summarizes the implementation-facing solver sequence.
+
 ## Summary
 
-The repo is structured around staged capability growth. Each stage should reuse the same scenario schema and run artifact pattern unless there is a concrete reason to change them.
+The repo grows through usable plateaus. Each stage should preserve the same scenario and run-artifact pattern unless there is a concrete reason to change them.
 
-## Milestones
+The active rule is strict: complete M4 credibility hardening before starting bypass or solids work.
 
-### Milestone 0
+## Implementation Sequence
 
-Repo foundation:
+### Foundation
+
+Status: done.
 
 - docs organized
 - package scaffold created
@@ -16,46 +20,70 @@ Repo foundation:
 - scenario schema defined
 - run artifacts standardized
 
-### Milestone 1
+### V0.1 Plan-View Hydraulics
 
-Geometry and mesh:
+Status: implemented.
 
 - rectangular basin geometry helpers
-- structured grid sizing
-- baffle representation as validated line segments
+- structured plan-view grid
+- steady screening hydraulic core
+- basic boundary condition handling
+- simple artifact outputs tied to run directories
 
-### Milestone 2
+### V0.2 Longitudinal Hydraulic Comparison
 
-V0.1 hydraulics:
+Status: implemented but needs credibility hardening.
 
-- steady depth-averaged hydraulic core
-- initial boundary condition handling
-- artifact outputs tied to run directories
+- longitudinal `length x depth` grid
+- design/current comparison workflow
+- conductance-based proxy features for perforated walls, plate settlers, and launders
+- RTD-style proxy outputs
+- comparison-study artifacts
 
-### Milestone 3
+Current risk:
 
-Metrics and comparison:
+- shipped comparison runs are workflow-valid but can be numerically weak
+- reports need formal quality tiers before they can support stronger conclusions
 
-- hydraulic screening metrics
-- scenario comparison summaries
-- stronger visualization outputs
+### M4 Credibility Hardening
 
-### Milestone 4
+Status: active.
 
-Tracer transport:
+- solver verification tests
+- synthetic metrics unit tests
+- solver and metrics docstrings
+- mesh sensitivity smoke checks
+- run quality tiers and quality reasons
 
-- conservative tracer layer
-- RTD-oriented outputs
-- hydraulic efficiency interpretation
+### V0.3 Explicit Bypass Hydraulics
 
-### Milestone 5
+Status: gated by M4.
 
-Simplified solids transport:
+- verified current-state bypass geometry
+- schema support for explicit bypass features
+- solver routing through explicit bypass geometry
+- design/current/proposed N-way study comparison
+- low, typical, and high-flow re-baseline
 
-- settling proxy terms
-- class-based solids representation
-- solids escape risk indicators
+### V0.4 Limited Solids Consequences
+
+Status: later.
+
+- 3 to 5 transparent settling classes
+- class-specific capture or escape risk proxies
+- screening consequence labels, not calibrated removal prediction
+
+### Later Expansion
+
+Status: later.
+
+- operational study package refinements
+- pseudo-transient flow sweeps
+- interactive review pages
+- field-informed validation
+- external CFD comparison
+- real-time integration only after validation supports it
 
 ## Upgrade Rule
 
-Do not move to higher-fidelity modeling until the lower-fidelity layer fails to answer a real engineering question cleanly.
+Do not move to higher-fidelity modeling until the lower-fidelity layer fails to answer a real engineering question cleanly, and do not let outputs imply stronger confidence than the solver quality tier supports.

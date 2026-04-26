@@ -29,3 +29,19 @@ Tracer transport, solids transport, density currents, partial-depth baffles, por
 ### 007. Visualization Method Priority
 
 For the current screening-model phase, the first animation method to pursue is deterministic particle pathlines with fading trails. Static streamline figures remain the preferred report-facing companion output. Dye-pulse style transport visuals remain deferred until their proxy status can be framed clearly enough that they do not imply validated transient transport or higher-fidelity physics than the current model supports.
+
+### 008. Usable Plateau Roadmap
+
+The product roadmap is organized around usable plateaus rather than a single long fidelity climb. Each plateau must produce something useful for plant operations, legible to experienced operators, understandable to managers, defensible to engineering reviewers, and suitable as a portfolio artifact.
+
+### 009. Split V0.3 and V0.4 Scope
+
+`v0.3` is explicit current-state bypass hydraulics only. Limited solids consequence modeling moves to `v0.4`. This prevents solids conclusions from being built on unverified current-state flow geometry.
+
+### 010. Quality Tiers Are Required
+
+Run summaries and comparison reports should carry formal quality labels such as `credible`, `directional_only`, or `weak`, plus `quality_reasons`. Manager-facing outputs may still explain value, but weak runs must visibly disclose their numerical limitations.
+
+### 011. Operator and Manager Legibility
+
+The repo is an operator-centered screening workflow. Outputs should be technically honest and reproducible, but they also have to be readable by experienced operators and managers. The project should not hide behind solver artifacts or imply CFD, calibration, real-time operations, or digital-twin status before validation supports those claims.

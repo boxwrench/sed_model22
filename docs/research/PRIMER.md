@@ -11,13 +11,15 @@ Across the archive, the project converges on the same core idea:
 - start with fast, transparent models
 - reserve higher-fidelity CFD and digital twin work for cases where simpler models stop answering the question
 
-The practical target is a staged path:
+The research corpus points toward this broad staged path:
 
 1. conceptual hydraulics and heuristics
 2. 2D hydraulic sandbox
 3. tracer and residence-time behavior
 4. simplified settling and solids transport
 5. future digital-twin and AI-assisted layers
+
+The active repo roadmap is narrower and takes precedence over the older research staging. For current work, read `docs/SESSION_START_CONTEXT.md` and `docs/ROADMAP.md`: M4 credibility hardening comes first, `v0.3` is explicit bypass hydraulics, and solids consequences are deferred to `v0.4`.
 
 ## How To Read The Overlap
 

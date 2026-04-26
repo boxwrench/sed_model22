@@ -1,51 +1,62 @@
 # V0.3 Roadmap
 
-This document defines the next major product step after the current `v0.2` design-versus-current comparison workflow.
+This document defines the next major product step after the hardened `v0.2` design-versus-current comparison workflow.
 
-The central `v0.3` move is not "more equations" for their own sake. The central move is from proxy-only hydraulic comparison toward a more decision-complete workflow that can connect the current-state flow path to likely removal consequences without pretending the repo is already a full CFD or plant digital twin.
+`v0.3` is now deliberately narrow: explicit current-state bypass hydraulics. Solids consequence modeling moves to `v0.4`.
 
 ## Product Goal
 
-`v0.3` should answer a more useful question than `v0.2`:
+`v0.3` should answer this question more honestly than the current proxy model:
 
-- not only "how did the hydraulics change"
-- but also "how might those hydraulic changes affect likely solids escape or removal"
+- how does the current-state flow path change hydraulic redistribution when the bypass path is represented explicitly?
 
-That only becomes credible if the current-state geometry is represented honestly first.
+The current blocked-wall basin should stop being represented only as a lossy interface if the real basin passes flow through an over/under, side, or serpentine bypass path.
 
 Working rule:
 
+- complete M4 credibility hardening first
 - explicit bypass geometry before solids consequence modeling
-- modest solids classes before pseudo-transient or 3D ambitions
-- preserve the repo's current honesty about screening scope and uncertainty
+- preserve transparent screening scope and uncertainty
+- keep outputs useful to operators and managers without overstating numerical strength
+
+## Preconditions
+
+Do not start `v0.3` schema or solver work until M4 is complete.
+
+Required M4 items:
+
+- solver verification tests against known analytical or expected screening-solver behavior
+- synthetic metrics unit tests
+- function-level solver and metrics docstrings
+- mesh sensitivity smoke checks on current `v0.2` comparison geometry
+- run quality tiers in summaries and reports
 
 ## Must Have
 
-### 1. Explicit Current-State Bypass Geometry
-
-The current blocked-wall basin should stop being represented only as a lossy interface when the real basin still passes flow through an over/under or serpentine bypass path.
+### 1. Verified Bypass Geometry Capture
 
 Required outcome:
 
-- represent the real current-state flow path explicitly
-- let the solver route flow through that path directly
-- update the current-state scenario so the dominant hydraulic feature is in geometry, not only in notes
+- verify the current-state bypass path from drawings, field notes, or structured intake records
+- record the uncertainty if dimensions are not fully confirmed
+- do not encode guessed geometry as verified geometry
 
 Why this is first:
 
-- if the bypass path is wrong, then downstream redistribution, launder approach, and later solids conclusions will all be built on the wrong hydraulic picture
+- if the flow path is wrong, downstream redistribution, launder approach, and later solids conclusions will all be built on the wrong hydraulic picture
 
-### 2. Schema Support for Bypass Features
+### 2. Schema Support for Explicit Bypass Features
 
 Add scenario support for explicit bypass-path geometry.
 
 Minimum fields should support:
 
-- path type: `over`, `under`, `side`, `serpentine`, or equivalent explicit geometry features
+- path type: `over`, `under`, `side`, `serpentine`, or equivalent explicit feature
 - `x` extent
 - `z` extent
 - effective opening area or open fraction where needed
-- design versus current-state distinction where that matters
+- notes or confidence fields for unverified dimensions
+- design, current-state, and proposed-fix case labels where that matters
 
 This should stay CLI/YAML-first and remain readable to humans.
 
@@ -55,30 +66,44 @@ The longitudinal solver should move from a wall-loss approximation to a geometry
 
 In scope:
 
-- explicit over/under path representation on the structured `x-z` grid
+- explicit over/under, side, or serpentine path representation on the structured `x-z` grid where feasible
 - updated flow redistribution around the blocked wall
 - updated headloss and downstream uniformity response
+- quality-tier reasons when the path representation is too coarse or the solve is weak
 
 Out of scope:
 
 - 3D flow
 - full transient hydraulics
 - CFD-level turbulence closure
+- solids consequence modeling
 
-### 4. Re-Baseline the Design-vs-Current Study
+### 4. N-Way Study Comparison
 
-Once the geometry changes are in, rerun the shipped study at low, typical, and high flow and update the comparison outputs.
+Prepare the study layer for design/current/proposed comparisons.
+
+Required behavior:
+
+- add optional `baseline_case_label`
+- keep the current first-case baseline default when `baseline_case_label` is omitted
+- preserve existing two-case study behavior
+- report deltas against the selected baseline
+
+### 5. Re-Baseline the Hydraulic Study
+
+Once geometry changes are in, rerun low, typical, and high-flow comparisons.
 
 Required outputs:
 
 - updated run bundles
 - updated comparison report
-- updated study media packages
-- updated interpretation text where the direction or magnitude of the comparison changes
+- updated study media packages if media remains enabled
+- updated interpretation text where direction or magnitude changes
+- visible `run_quality_tier` and `quality_reasons`
 
-### 5. Mesh Sensitivity Checks on the Revised Geometry
+### 6. Mesh Sensitivity Checks on Revised Geometry
 
-Add mesh sensitivity smoke checks for the revised `v0.2`/`v0.3` geometry.
+Add mesh sensitivity smoke checks for the revised geometry.
 
 At minimum, check stability of:
 
@@ -92,138 +117,54 @@ The goal is not publication-grade verification. The goal is enough stability to 
 
 ## Should Have
 
-### 1. Limited Multi-Class Solids Model
+### 1. Prescriptive Validation Errors
 
-After the bypass geometry is represented explicitly, add a modest solids layer.
+Wrap raw validation failures with field paths and suggested fixes for common scenario mistakes.
 
-Start small:
+Candidate files:
 
-- 3 to 5 discrete settling classes
-- fast-settling flocs
-- typical flocs
-- slow-settling or "pin" flocs
+- `src/sed_model22/cli.py`
+- `src/sed_model22/config.py`
 
-Prefer transparent class-based transport over a broad, hard-to-defend solids framework.
+### 2. Solver Protocol Boundary
 
-### 2. Solids-Consequence Outputs
+Define a small `SolverProtocol` before adding a third solver path.
 
-Add study-facing outputs that move beyond pure hydraulic proxies.
+Candidate file:
 
-Candidate outputs:
+- `src/sed_model22/solver/protocol.py`
 
-- class-specific capture fraction
-- class-specific launder escape fraction
-- basin-level removal proxy
-- case-to-case delta in likely solids escape risk
+### 3. Template Extraction
 
-These should remain labeled as screening outputs unless later validation supports stronger claims.
+Extract large HTML templates from Python string literals when touching the report layer.
 
-### 3. Visual Overlays for Solids Consequence
+Candidate destinations:
 
-The media/report layer should show not only hydraulic differences but also likely consequence for the slowest-settling material.
-
-This is the first likely leadership-facing visual that becomes closer to:
-
-- "this current-state path is more likely to move vulnerable solids toward the launder"
-
-than to:
-
-- "here is a velocity map"
-
-### 4. Formal Run-Quality Tier
-
-Add a formal run-quality or confidence tier and carry it through:
-
-- run summary
-- manifests
-- comparison report
-- study media package
-
-Suggested first tiers:
-
-- `credible`
-- `directional_only`
-- `weak`
-
-This should encode what the repo already does informally with caution language.
+- `src/sed_model22/templates/`
+- `src/sed_model22/media/templates/`
 
 ## Later
 
-### 1. Pseudo-Transient Flow Stepping
+These are not part of `v0.3`:
 
-Allow coarse time-varying flow stepping, such as a diurnal curve with hourly steps.
-
-Why later:
-
-- a steady model with the right current-state geometry is more valuable than a pseudo-transient model with the wrong flow path
-
-### 2. Plate-Settler Momentum Refinement
-
-Move the plate-settler representation toward a more physically grounded resistance model, potentially with Reynolds-dependent behavior inside the plate channels.
-
-Why later:
-
-- it matters
-- but the transition-wall/bypass representation is the bigger current uncertainty
-
-### 3. Interactive Study Viewer
-
-Build on the current `visual_scene.json` contract to support interactive HTML review.
-
-This should remain a media-layer feature, not a solver concern.
-
-### 4. Field-Informed Validation Loop
-
-Use whatever becomes available later:
-
-- headloss observations
-- tracer observations
-- operator observations
-- performance trends
-
-to tighten confidence in the screening workflow.
-
-## Pre-V0.3 Engineering Hardening
-
-These items come from a project review (April 2026) and must be done before V0.3 solver work begins.
-They are tracked as M4 remaining tasks in `docs/IMPLEMENTATION_PLAN.md`.
-
-**Required before V0.3 schema work starts:**
-
-- Solver verification tests against known analytical solutions (v0.1 and v0.2)
-- Metrics unit tests with synthetic inputs (dead zone fraction, uniformity index, Morrill index)
-- Function-level docstrings in solver files naming the PDE and iteration scheme
-- Mesh sensitivity smoke checks on current v0.2 comparison geometry
-
-**Should-do alongside V0.3 (medium priority):**
-
-- Prescriptive validation error messages — wrap raw Pydantic errors with field path + suggested fix
-  (files: `src/sed_model22/cli.py`, `src/sed_model22/config.py`)
-- Extract HTML templates from Python string literals to `src/sed_model22/templates/`
-  (currently: 864-line operator report in `viz/operator_report.py`, 230-line layout in `media/layouts.py`)
-- Define a `SolverProtocol` ABC before a third solver is added
-  (file: `src/sed_model22/solver/protocol.py`)
-- Refactor `study.py` to support N-way comparison (not just 2 cases)
-  — the design-spec / current-state / proposed-fix workflow will need 3 cases
-
-**Backlog (lower priority, after V0.3):**
-
-- `stderr` progress logging at key solver stages (mesh built, converged, artifacts written)
-- Rename `operator_report.html` → `engineering_screening_report.html` (content is engineering diagnostics, not operator guidance)
-- Parametrized tests across low / typical / high flow rates
-- Getting-started guide (`docs/GETTING_STARTED.md`) and metrics reference (`docs/METRICS_REFERENCE.md`)
+- limited multi-class solids consequences, now planned for `v0.4`
+- pseudo-transient flow stepping
+- plate-settler momentum refinement
+- interactive study viewer
+- field-informed validation loop
+- external CFD comparison
 
 ## Recommended Execution Order
 
-0. Complete pre-V0.3 engineering hardening (see above).
-1. Extend schema for bypass-path geometry.
-2. Implement explicit bypass-path solver support.
-3. Refresh the current-state scenario using the cleaned intake geometry workflow.
-4. Re-run design-versus-current studies and visuals.
-5. Add mesh sensitivity smoke checks on the revised geometry.
-6. Add a limited multi-class solids layer.
-7. Add solids comparison metrics and leadership-facing consequence visuals.
-8. Only then consider pseudo-transient stepping.
+1. Complete M4 credibility hardening.
+2. Verify bypass geometry using `templates/intake_geometry_survey.yaml` or equivalent structured notes.
+3. Extend schema for bypass-path geometry.
+4. Implement explicit bypass routing in the longitudinal solver.
+5. Add N-way comparison support with `baseline_case_label`.
+6. Refresh current-state and proposed scenarios.
+7. Re-run low, typical, and high-flow studies.
+8. Add mesh sensitivity checks on the revised geometry.
+9. Update report interpretation and quality-tier language.
 
 ## Definition of V0.3
 
@@ -231,11 +172,12 @@ They are tracked as M4 remaining tasks in `docs/IMPLEMENTATION_PLAN.md`.
 
 - explicit current-state bypass geometry
 - updated hydraulic comparison on that geometry
-- limited multi-class solids consequence outputs
-- study-level visual outputs that connect hydraulic change to likely removal consequence
+- design/current/proposed comparison support
+- quality-tiered reports that visibly distinguish credible, directional, and weak runs
 
 `v0.3` is not:
 
+- solids consequence modeling
 - 3D CFD
 - a calibrated digital twin
 - full water-quality prediction
@@ -243,8 +185,6 @@ They are tracked as M4 remaining tasks in `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Working Constraint
 
-Do not let the visual or numerical sophistication outrun representational honesty.
+Do not let visual or numerical sophistication outrun representational honesty.
 
-The repo's strength is that it is understandable, inspectable, and explicit about what is proxy versus what is more physically grounded.
-
-`v0.3` should preserve that strength while making the current-state comparison materially more decision-useful.
+The repo's strength is that it is understandable, inspectable, and explicit about what is proxy versus what is more physically grounded. `v0.3` should preserve that strength while making the current-state comparison materially more decision-useful.
