@@ -65,6 +65,9 @@ class CliTests(unittest.TestCase):
             self.assertTrue((run_dir / "plots" / "basin_layout.svg").exists())
             self.assertTrue((run_dir / "plots" / "velocity_magnitude.svg").exists())
             self.assertTrue((run_dir / "plots" / "streamlines.svg").exists())
+            summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("credible", summary["run_quality_tier"])
+            self.assertTrue(summary["quality_reasons"])
             report_html = (run_dir / "operator_report.html").read_text(encoding="utf-8")
             self.assertIn("Technical basis:", report_html)
             self.assertIn("slow-moving", report_html)
@@ -101,6 +104,7 @@ class CliTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             output = stdout.getvalue()
+            self.assertIn("Run quality: credible", output)
             self.assertIn("Detention time:", output)
             self.assertIn("Mass balance error:", output)
             self.assertIn("Operator report:", output)
@@ -136,6 +140,8 @@ class CliTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             output = stdout.getvalue()
+            self.assertIn("Run quality: weak", output)
+            self.assertIn("Quality reasons:", output)
             self.assertIn("RTD proxy model:", output)
             self.assertIn("RTD proxy breakthrough:", output)
         finally:

@@ -52,6 +52,8 @@ def _build_operator_view(summary: dict, fields: HydraulicFieldData) -> dict:
     solver = summary["solver"]
     metrics = summary["metrics"]
     geometry = summary["geometry"]
+    quality_tier = summary.get("run_quality_tier", "unknown")
+    quality_reasons = summary.get("quality_reasons", [])
     speed_values = [value for row in fields.speed_m_s for value in row]
     mean_speed = sum(speed_values) / max(len(speed_values), 1)
     max_speed = max(speed_values) if speed_values else 0.0
@@ -95,6 +97,7 @@ def _build_operator_view(summary: dict, fields: HydraulicFieldData) -> dict:
         ],
         "metricList": [
             {"label": "Mass balance check", "value": f"{solver['mass_balance_error']:.3e}"},
+            {"label": "Run quality tier", "value": str(quality_tier)},
             {"label": "Outlet flow variation", "value": f"{outlet_variation:.2f}"},
             {"label": "Peak side-flow speed", "value": f"{solver['max_transverse_velocity_m_s']:.4f} m/s"},
             {"label": "Baffle count", "value": str(summary["baffle_count"])},
@@ -112,6 +115,10 @@ def _build_operator_view(summary: dict, fields: HydraulicFieldData) -> dict:
             {"label": "Outlet discharge", "value": f"{solver['outlet_discharge_m3_s']:.4f} m3/s"},
             {"label": "Mean water speed", "value": f"{solver['mean_velocity_m_s']:.4f} m/s"},
             {"label": "Blocked mesh faces", "value": str(solver["blocked_face_count"])},
+            {
+                "label": "Quality reasons",
+                "value": "; ".join(str(reason) for reason in quality_reasons) if quality_reasons else "n/a",
+            },
         ],
         "scenarioTable": [
             {"label": "Case ID", "value": summary["metadata"]["case_id"]},

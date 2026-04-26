@@ -150,6 +150,8 @@ def _write_comparison_csv(
         "flow_label",
         "flow_rate_m3_s",
         "run_dir",
+        "run_quality_tier",
+        "quality_reasons",
         "solver_converged",
         "solver_mass_balance_error",
         "solver_max_velocity_m_s",
@@ -221,6 +223,10 @@ def _write_comparison_report(
         flow_rows = [row for row in rows if row["flow_label"] == flow_label]
         lines.append("")
         lines.append(f"## Flow: {flow_label}")
+        lines.append("")
+        lines.append("Quality status:")
+        lines.extend(_flow_quality_lines(flow_rows, case_order))
+        lines.append("")
         lines.append(_comparison_table(flow_rows, threshold_columns, case_order))
         caution_lines = _flow_cautions(flow_rows, case_order, threshold_columns)
         if caution_lines:
@@ -505,6 +511,8 @@ def _comparison_row(
         "flow_label": flow_label,
         "flow_rate_m3_s": flow_rate_m3_s,
         "run_dir": str(run_dir),
+        "run_quality_tier": summary.get("run_quality_tier", "unknown"),
+        "quality_reasons": json.dumps(summary.get("quality_reasons", [])),
         "solver_converged": solver["converged"],
         "solver_mass_balance_error": solver["mass_balance_error"],
         "solver_max_velocity_m_s": solver["max_velocity_m_s"],
@@ -539,6 +547,25 @@ def _comparison_row(
     return row
 
 
+def _flow_quality_lines(
+    flow_rows: list[dict[str, object]],
+    case_order: list[str],
+) -> list[str]:
+    by_case = {row["case_label"]: row for row in flow_rows}
+    lines: list[str] = []
+    for case_label in case_order:
+        row = by_case.get(case_label)
+        if row is None:
+            continue
+        tier = str(row.get("run_quality_tier", "unknown"))
+        reasons = _parse_quality_reasons(row.get("quality_reasons"))
+        if reasons:
+            lines.append(f"- `{case_label}`: `{tier}` - {'; '.join(reasons)}")
+        else:
+            lines.append(f"- `{case_label}`: `{tier}`")
+    return lines
+
+
 def _threshold_columns(rows: list[dict[str, object]]) -> list[str]:
     keys: list[str] = []
     for row in rows:
@@ -548,6 +575,19 @@ def _threshold_columns(rows: list[dict[str, object]]) -> list[str]:
                     keys.append(column)
     keys.sort(key=lambda value: float(value[len("settling_exceedance_") : -len("_m_per_s")].replace("_", ".")))
     return keys
+
+
+def _parse_quality_reasons(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return [value] if value else []
+        if isinstance(parsed, list):
+            return [str(item) for item in parsed]
+    return []
 
 
 def _comparison_labels(case_order: list[str]) -> tuple[str, str]:

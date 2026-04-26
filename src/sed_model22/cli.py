@@ -101,6 +101,8 @@ def _format_run_summary(summary: dict) -> str:
     mesh = summary["mesh"]
     solver = summary["solver"]
     model_form = summary.get("model_form")
+    quality_tier = summary.get("run_quality_tier", "unknown")
+    quality_reasons = summary.get("quality_reasons", [])
 
     if model_form == "longitudinal_v0_2":
         detention_time_s = metrics["theoretical_detention_time_s"]
@@ -110,6 +112,7 @@ def _format_run_summary(summary: dict) -> str:
             f"Case: {metadata['case_id']}",
             f"Stage: {metadata['stage']}",
             f"Model form: {model_form}",
+            f"Run quality: {quality_tier}",
             f"Detention time: {detention_time_h:.2f} h ({detention_time_s:.0f} s)",
             f"Headloss across transition wall: {metrics['transition_headloss_m']:.4f} m",
             f"Post-transition VUI: {metrics['post_transition_velocity_uniformity_index']:.4f}",
@@ -126,11 +129,14 @@ def _format_run_summary(summary: dict) -> str:
             f"Morrill index: {metrics['morrill_index']:.4f}",
             f"Solver status: {solver['solver_status']}",
         ]
+        if quality_reasons:
+            lines.append(f"Quality reasons: {'; '.join(quality_reasons)}")
         return "\n".join(lines)
 
     lines = [
         f"Case: {metadata['case_id']}",
         f"Stage: {metadata['stage']}",
+        f"Run quality: {quality_tier}",
         f"Detention time: {metrics['detention_time_h']:.2f} h",
         f"Surface overflow rate: {metrics['surface_overflow_rate_m_per_d']:.2f} m/day",
         f"Mesh: {mesh['nx']} x {mesh['ny']} ({mesh['cell_count']} cells)",
@@ -139,6 +145,8 @@ def _format_run_summary(summary: dict) -> str:
         f"Max velocity: {solver['max_velocity_m_s']:.4f} m/s",
         "Operator report: operator_report.html",
     ]
+    if quality_reasons:
+        lines.append(f"Quality reasons: {'; '.join(quality_reasons)}")
     return "\n".join(lines)
 
 

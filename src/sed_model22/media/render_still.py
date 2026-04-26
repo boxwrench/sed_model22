@@ -237,6 +237,8 @@ def _highlighted_metrics(summary: dict[str, object]) -> dict[str, object]:
     hydraulics = _mapping(summary.get("hydraulics"))
     solver = _mapping(summary.get("solver"))
     highlighted: dict[str, object] = {}
+    if "run_quality_tier" in summary:
+        highlighted["run_quality_tier"] = summary["run_quality_tier"]
     for key in (
         "flow_rate_m3_s",
         "transition_headloss_m",
@@ -262,6 +264,15 @@ def _summary_warnings(summary: dict[str, object]) -> list[str]:
     warnings: list[str] = []
     model_form = str(summary.get("model_form", ""))
     solver = _mapping(summary.get("solver"))
+    quality_tier = str(summary.get("run_quality_tier", "unknown"))
+    quality_reasons = summary.get("quality_reasons", [])
+    if isinstance(quality_reasons, list) and quality_tier in {"credible", "directional_only", "weak"}:
+        if quality_tier == "credible":
+            warnings.append("Run quality tier is `credible` under the current screening thresholds.")
+        else:
+            warnings.append(
+                f"Run quality tier is `{quality_tier}`: {'; '.join(str(item) for item in quality_reasons)}."
+            )
     if model_form == "plan_view_v0_1":
         warnings.append("This is a 2.5D display of a 2D plan-view screening field, not a full 3D solve.")
     elif model_form == "longitudinal_v0_2":
@@ -327,6 +338,13 @@ def _executive_summary_lines(
     right_metrics = _mapping(case_summaries[1].get("metrics"))
     left_label = str(_mapping(case_summaries[0].get("metadata")).get("case_id", "left_case"))
     right_label = str(_mapping(case_summaries[1].get("metadata")).get("case_id", "right_case"))
+    left_quality = str(case_summaries[0].get("run_quality_tier", "unknown"))
+    right_quality = str(case_summaries[1].get("run_quality_tier", "unknown"))
+
+    if left_quality == right_quality:
+        summary_lines.append(f"Both runs are currently labeled `{left_quality}`.")
+    else:
+        summary_lines.append(f"{left_label} is labeled `{left_quality}` while {right_label} is labeled `{right_quality}`.")
 
     transition_headloss = _delta_phrase(
         right_metrics.get("transition_headloss_m"),

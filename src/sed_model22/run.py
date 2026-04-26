@@ -221,6 +221,7 @@ def _materialize_plan_view_run(
         "metrics": metrics.model_dump(mode="json"),
         "solver": solver_summary.model_dump(mode="json"),
     }
+    summary.update(_run_quality_payload(summary))
     _write_json(summary_path, summary)
     media_artifacts = _materialize_run_media(
         scenario=scenario,
@@ -246,6 +247,8 @@ def _materialize_plan_view_run(
         "operator_report_path": str(operator_report_path),
         "tracer_plot_path": None,
         "solver_status": solver_summary.solver_status,
+        "run_quality_tier": summary["run_quality_tier"],
+        "quality_reasons": summary["quality_reasons"],
         **media_artifacts,
     }
     _write_json(manifest_path, manifest)
@@ -324,6 +327,7 @@ def _materialize_longitudinal_run(
         "solver": solver_summary.model_dump(mode="json"),
         "tracer": tracer.model_dump(mode="json"),
     }
+    summary.update(_run_quality_payload(summary))
     _write_json(summary_path, summary)
     media_artifacts = _materialize_run_media(
         scenario=scenario,
@@ -348,6 +352,8 @@ def _materialize_longitudinal_run(
         "operator_report_path": None,
         "tracer_plot_path": str(tracer_plot_path),
         "solver_status": solver_summary.solver_status,
+        "run_quality_tier": summary["run_quality_tier"],
+        "quality_reasons": summary["quality_reasons"],
         **media_artifacts,
     }
     _write_json(manifest_path, manifest)
@@ -567,9 +573,11 @@ def _run_metric_lines(summary: dict) -> list[str]:
     metrics = summary["metrics"]
     solver = summary["solver"]
     model_form = summary.get("model_form")
+    quality_tier = summary.get("run_quality_tier", "unknown")
     if model_form == "longitudinal_v0_2":
         tracer = summary.get("tracer", {})
         return [
+            f"Run quality: {quality_tier}",
             f"Transition headloss: {metrics['transition_headloss_m']:.4f} m",
             f"Post-transition uniformity index: {metrics['post_transition_velocity_uniformity_index']:.4f}",
             f"RTD proxy: t10 {tracer.get('t10_s', metrics['t10_s']):.0f} s | t50 {tracer.get('t50_s', metrics['t50_s']):.0f} s | t90 {tracer.get('t90_s', metrics['t90_s']):.0f} s",
@@ -577,6 +585,7 @@ def _run_metric_lines(summary: dict) -> list[str]:
             f"Solver mass-balance diagnostic: {solver['mass_balance_error']:.3e}",
         ]
     return [
+        f"Run quality: {quality_tier}",
         f"Detention time: {metrics['detention_time_h']:.2f} h",
         f"Surface overflow rate: {metrics['surface_overflow_rate_m_per_d']:.2f} m/day",
         f"Max velocity: {solver['max_velocity_m_s']:.4f} m/s",
@@ -587,6 +596,7 @@ def _run_metric_lines(summary: dict) -> list[str]:
 def _run_warning_lines(summary: dict) -> list[str]:
     lines = []
     model_form = summary.get("model_form")
+    lines.extend(_quality_warning_lines(summary))
     if model_form == "longitudinal_v0_2":
         lines.append("This is a 2.5D display of a 2D longitudinal screening field, not a full 3D solve.")
         lines.append("RTD values in this preview are deterministic proxy timings derived from the steady field.")
@@ -601,3 +611,56 @@ def _run_warning_lines(summary: dict) -> list[str]:
 
 def _optional_string(value: object) -> str | None:
     return value if isinstance(value, str) else None
+
+
+def _run_quality_payload(summary: dict) -> dict[str, object]:
+    tier, reasons = _assess_run_quality(summary)
+    return {
+        "run_quality_tier": tier,
+        "quality_reasons": reasons,
+    }
+
+
+def _assess_run_quality(summary: dict) -> tuple[str, list[str]]:
+    solver = summary["solver"]
+    reasons: list[str] = []
+    directional_reasons: list[str] = []
+    weak_reasons: list[str] = []
+
+    if not solver.get("converged", False):
+        weak_reasons.append("solver did not converge within the configured iteration limit")
+
+    mass_balance_error = abs(float(solver.get("mass_balance_error", 0.0)))
+    if mass_balance_error > 1.0:
+        weak_reasons.append(
+            f"solver discharge mismatch diagnostic is {mass_balance_error:.3e}, above the weak threshold of 1.0"
+        )
+    elif mass_balance_error > 0.25:
+        directional_reasons.append(
+            f"solver discharge mismatch diagnostic is {mass_balance_error:.3e}, above the directional threshold of 0.25"
+        )
+
+    reasons.extend(weak_reasons)
+    reasons.extend(directional_reasons)
+
+    if weak_reasons:
+        return "weak", reasons
+    if directional_reasons:
+        return "directional_only", reasons
+    return "credible", ["solver converged and discharge mismatch stayed within the current credibility thresholds"]
+
+
+def _quality_warning_lines(summary: dict) -> list[str]:
+    tier = summary.get("run_quality_tier")
+    reasons = summary.get("quality_reasons", [])
+    if not isinstance(reasons, list):
+        reasons = []
+    if tier == "credible":
+        return ["Run quality tier is `credible` under the current screening thresholds."]
+    if tier == "directional_only":
+        joined = "; ".join(str(reason) for reason in reasons) if reasons else "directional screening thresholds were exceeded"
+        return [f"Run quality tier is `directional_only`: {joined}."]
+    if tier == "weak":
+        joined = "; ".join(str(reason) for reason in reasons) if reasons else "weak screening thresholds were exceeded"
+        return [f"Run quality tier is `weak`: {joined}."]
+    return []

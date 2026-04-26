@@ -69,6 +69,7 @@ class StudyTests(unittest.TestCase):
                 {row["case_label"] for row in summary["rows"]},
                 {"design_spec", "current_blocked"},
             )
+            self.assertEqual({"weak"}, {row["run_quality_tier"] for row in summary["rows"]})
 
             run_manifest_paths = [
                 path for path in (study_dir / "runs").rglob("manifest.json") if path.parent.name != "media"
@@ -91,6 +92,9 @@ class StudyTests(unittest.TestCase):
             self.assertIn("current_blocked - design_spec", report_text)
             self.assertIn("Transition headloss", report_text)
             self.assertIn("RTD proxy timing shifts", report_text)
+            self.assertIn("Quality status:", report_text)
+            self.assertIn("`design_spec`: `weak`", report_text)
+            self.assertIn("`current_blocked`: `weak`", report_text)
             self.assertIn("Screening cautions:", report_text)
             self.assertIn("absolute velocity-derived m/s values are not field-credible", report_text)
             self.assertIn("Settling-threshold exceedance is saturated", report_text)
@@ -128,6 +132,7 @@ class StudyTests(unittest.TestCase):
             self.assertIn("t10", report_text)
             self.assertIn("t50", report_text)
             self.assertIn("t90", report_text)
+            self.assertIn("Quality status:", report_text)
             self.assertIn("Screening cautions:", report_text)
             self.assertNotIn("No comparison pairs were found", report_text)
             self.assertIn("Executive Takeaways", media_html)

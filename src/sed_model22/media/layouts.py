@@ -256,6 +256,7 @@ def build_comparison_html(*, scene: VisualScene) -> str:
 
 def _metric_items(metrics: dict[str, object]) -> str:
     labels = {
+        "run_quality_tier": "Run Quality",
         "flow_rate_m3_s": "Flow",
         "transition_headloss_m": "Headloss",
         "post_transition_velocity_uniformity_index": "Post-Transition VUI",
