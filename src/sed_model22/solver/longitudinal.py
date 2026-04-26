@@ -75,6 +75,14 @@ def solve_steady_longitudinal_screening_flow(
     scenario: LongitudinalScenarioConfig,
     mesh: LongitudinalMeshSummary,
 ) -> tuple[LongitudinalSolutionSummary, LongitudinalFieldData]:
+    """Solve the v0.2 longitudinal screening field on a structured x-z grid.
+
+    The field is a conductance-weighted steady head solve: a discrete elliptic
+    balance for normalized head with inlet and launder outlet boundaries plus
+    feature-based face conductance modifiers. The head field is iterated with
+    Gauss-Seidel sweeps and successive over-relaxation, then scaled to the
+    requested discharge per basin width.
+    """
     x_face_conductance, z_face_conductance, boundary_masks = _build_face_conductances(scenario, mesh)
     head = _initial_head_guess(mesh)
 
@@ -511,6 +519,13 @@ def _solve_head_field(
     z_face_conductance: list[list[float]],
     boundary_masks: _BoundaryMasks,
 ) -> tuple[int, bool, float]:
+    """Iterate the conductance-weighted longitudinal head field with SOR.
+
+    Each sweep applies in-place Gauss-Seidel updates over the x-z grid using the
+    local face conductances assembled from inlet, baffle, plate-settler, and
+    launder modifiers. Convergence is tracked by the maximum head update in a
+    sweep relative to the configured tolerance.
+    """
     max_delta = 0.0
     converged = False
     iterations = 0

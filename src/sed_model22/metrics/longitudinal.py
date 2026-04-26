@@ -44,6 +44,13 @@ def compute_longitudinal_metrics(
     fields: LongitudinalFieldData,
     tracer: LongitudinalTracerSummary,
 ) -> LongitudinalMetrics:
+    """Reduce the longitudinal field and RTD proxy into screening metrics.
+
+    These metrics are algebraic post-processing of the steady screening field and
+    the synthetic RTD proxy, not a separate transport solve. They summarize
+    headloss, velocity uniformity, dead zones, launder approach conditions, and
+    RTD-derived indices for case-to-case comparison.
+    """
     basin_area_m2 = scenario.geometry.basin_length_m * scenario.geometry.basin_width_m
     basin_volume_m3 = basin_area_m2 * scenario.geometry.water_depth_m
     theoretical_detention_time_s = basin_volume_m3 / scenario.hydraulics.flow_rate_m3_s

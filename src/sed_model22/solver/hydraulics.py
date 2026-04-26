@@ -42,6 +42,13 @@ def solve_steady_screening_flow(
     mesh: MeshSummary,
     metrics: ScenarioMetrics,
 ) -> tuple[HydraulicsSolutionSummary, HydraulicFieldData]:
+    """Solve the v0.1 plan-view screening field on a structured Cartesian grid.
+
+    The solved field is a steady potential-flow proxy: a discrete Laplace problem
+    for normalized head with Dirichlet inlet/outlet boundaries and no-flux walls
+    and full-depth solid baffles. The head field is iterated with Gauss-Seidel
+    updates plus successive over-relaxation, then scaled to the requested flow.
+    """
     x_blocked, y_blocked, ignored_baffles = _build_blocked_faces(scenario, mesh)
     inlet_cells = _boundary_cells(scenario.inlet, mesh)
     outlet_cells = _boundary_cells(scenario.outlet, mesh)
@@ -204,6 +211,12 @@ def _solve_head_field(
     x_blocked: list[list[bool]],
     y_blocked: list[list[bool]],
 ) -> tuple[int, bool, float]:
+    """Iterate the discrete plan-view Laplace solve with SOR until tolerance.
+
+    This applies in-place Gauss-Seidel sweeps over the structured grid with the
+    user-provided relaxation factor. Convergence is reported by the maximum
+    single-cell head update compared against the configured tolerance.
+    """
     dx_coef = 1.0 / (mesh.dx_m * mesh.dx_m)
     dy_coef = 1.0 / (mesh.dy_m * mesh.dy_m)
     max_delta = 0.0
