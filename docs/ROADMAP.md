@@ -8,7 +8,7 @@ Each plateau should produce something useful for plant operations, legible to ex
 
 Goal: clean docs, passing tests, explicit limitations, and reproducible runs.
 
-Status: mostly done, with current documentation refresh in progress.
+Status: done.
 
 Value:
 
@@ -28,7 +28,7 @@ Exit criteria:
 
 Goal: a credible design-vs-current screening report with quality-tier labels and manager/operator-readable outputs.
 
-Status: active next hardening target.
+Status: achieved as a bounded screening plateau.
 
 Current value:
 
@@ -38,14 +38,13 @@ Current value:
 
 Current gap:
 
-- the shipped study is workflow-valid but numerically weak because convergence and discharge-balance problems can make the current comparison directional at best
-- output artifacts do not yet carry formal `run_quality_tier` and `quality_reasons`
+- the shipped study is workflow-valid but numerically weak because convergence and discharge-balance problems still make the current comparison `weak`
+- output artifacts now carry formal `run_quality_tier` and `quality_reasons`
 
 Required work:
 
-- complete M4 solver credibility hardening
-- add quality-tier classification to run summaries and study reports
-- ensure weak runs visibly say `directional_only` or `weak`
+- keep the quality-tier classification wired through run summaries and study reports as the solver evolves
+- ensure weak runs continue to visibly say `directional_only` or `weak`
 - keep manager-facing outputs useful while refusing unsupported certainty
 
 ## Plateau 3: Explicit Current-State Bypass Hydraulics
@@ -53,6 +52,8 @@ Required work:
 Goal: a design/current/proposed comparison that represents the real flow path, not only a lossy wall proxy.
 
 Target version: `v0.3`.
+
+Status: active workstream.
 
 Required work:
 
@@ -115,7 +116,7 @@ Possible future work:
 - external CFD comparison for validation and calibration context
 - SCADA or real-time integration only after validation supports it
 
-## Planned Interface Changes
+## Interface State And Planned Changes
 
 Study schema:
 
@@ -124,8 +125,8 @@ Study schema:
 
 Run summary:
 
-- add `run_quality_tier`
-- add `quality_reasons`
+- already includes `run_quality_tier`
+- already includes `quality_reasons`
 
 Report behavior:
 

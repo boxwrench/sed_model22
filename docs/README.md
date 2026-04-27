@@ -12,7 +12,7 @@ This folder is the working map for the project. Use it to find the current repo 
 3. `IMPLEMENTATION_PLAN.md`
    - active engineering milestone checklist and pickup queue
 4. `V0_3_ROADMAP.md`
-   - scoped explicit-bypass hydraulics plan after M4 is complete
+   - scoped explicit-bypass hydraulics plan for the active `v0.3` workstream
 5. `architecture/decision-log.md`
    - durable product and architecture decisions
 
@@ -26,16 +26,15 @@ The repo is past pure scaffolding. The active build state is:
 - run artifacts, SVG outputs, and study-level media packages working
 - deterministic particle pathlines accepted as the first animation direction
 - static streamline stills accepted as the report companion
-- verification status: 34 passing tests at the latest code checkpoint outside sandbox
-- active risk: the shipped `v0.2` study is workflow-valid but numerically weak until convergence, discharge balance, mesh sensitivity, and quality-tier work are hardened
-- active rule: do not begin bypass or solids work until M4 credibility hardening is complete
+- verification status: 41 passing tests at the latest code checkpoint outside sandbox
+- active risk: the shipped `v0.2` study is workflow-valid, visibly quality-tiered, and still numerically weak because the current-state geometry is still proxy-based
+- active rule: begin `v0.3` bypass hydraulics work, but keep solids work deferred until `v0.3` is complete
 
 ## Product Sequence
 
-1. M4 credibility hardening.
-2. `v0.3` explicit current-state bypass hydraulics.
-3. `v0.4` limited solids consequence layer.
-4. Later operational expansion.
+1. `v0.3` explicit current-state bypass hydraulics.
+2. `v0.4` limited solids consequence layer.
+3. Later operational expansion.
 
 Each stage should produce something useful for plant operations, legible to experienced operators, understandable to managers, defensible to engineering reviewers, and suitable as a portfolio artifact.
 
@@ -59,7 +58,7 @@ Each stage should produce something useful for plant operations, legible to expe
 1. `SESSION_START_CONTEXT.md`
 2. `ROADMAP.md`
 3. `IMPLEMENTATION_PLAN.md`
-4. `V0_3_ROADMAP.md` only after M4 work is complete or when planning bypass hydraulics
+4. `V0_3_ROADMAP.md` for the active bypass-hydraulics workstream
 5. `research/CANON.md` when the implementation needs the research basis
 6. `architecture/media-output-spec.md` when the session is about preview or report media
 7. `DEVLOG.md` for chronological project history
@@ -73,4 +72,4 @@ If work resumes after a break:
 2. Read `ROADMAP.md`.
 3. Read `IMPLEMENTATION_PLAN.md`.
 4. Run the full test suite with `PYTHONPATH=src`.
-5. Continue the M4 pickup queue before touching bypass or solids work.
+5. Continue the `v0.3` bypass-hydraulics pickup queue before touching solids work.

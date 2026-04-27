@@ -6,7 +6,7 @@ The canonical product roadmap is `docs/ROADMAP.md`. This architecture note summa
 
 The repo grows through usable plateaus. Each stage should preserve the same scenario and run-artifact pattern unless there is a concrete reason to change them.
 
-The active rule is strict: complete M4 credibility hardening before starting bypass or solids work.
+The active rule is now: proceed with `v0.3` bypass hydraulics on the completed M4 baseline, and keep solids work deferred until `v0.3` is done.
 
 ## Implementation Sequence
 
@@ -32,7 +32,7 @@ Status: implemented.
 
 ### V0.2 Longitudinal Hydraulic Comparison
 
-Status: implemented but needs credibility hardening.
+Status: implemented and quality-tiered, but still proxy-limited.
 
 - longitudinal `length x depth` grid
 - design/current comparison workflow
@@ -43,11 +43,11 @@ Status: implemented but needs credibility hardening.
 Current risk:
 
 - shipped comparison runs are workflow-valid but can be numerically weak
-- reports need formal quality tiers before they can support stronger conclusions
+- reports now show formal quality tiers, but the current-state geometry still needs explicit bypass representation
 
 ### M4 Credibility Hardening
 
-Status: active.
+Status: complete.
 
 - solver verification tests
 - synthetic metrics unit tests
@@ -57,7 +57,7 @@ Status: active.
 
 ### V0.3 Explicit Bypass Hydraulics
 
-Status: gated by M4.
+Status: active.
 
 - verified current-state bypass geometry
 - schema support for explicit bypass features

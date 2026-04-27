@@ -27,22 +27,23 @@ The product has to remain:
 
 - `v0.1` exists as a plan-view screening workflow for simple rectangular basin layout checks.
 - `v0.2` exists as a longitudinal `length x depth` design-vs-current workflow with comparison-study outputs.
-- The current code checkpoint has 34 passing tests outside the sandboxed environment.
+- The current code checkpoint has 41 passing tests outside the sandboxed environment.
 - The CLI and YAML workflow are the main interface.
-- The shipped `v0.2` design-vs-current study is workflow-valid, but numerically weak: the current study can demonstrate artifact generation and comparison structure, yet its conclusions should not be made stronger until convergence and discharge-balance problems are tiered and addressed.
+- The shipped `v0.2` design-vs-current study is workflow-valid and now visibly quality-tiered, but it is still numerically weak: the current study can demonstrate artifact generation and comparison structure, yet its conclusions should still be read as `weak` under the current solver diagnostics.
 
 ## Active Rule
 
-Do not start bypass schema work, bypass solver work, or solids consequence modeling until M4 credibility hardening is complete.
+M4 credibility hardening is complete. `v0.3` explicit bypass hydraulics is now the active workstream.
+
+Do not start solids consequence modeling until `v0.3` bypass hydraulics is complete.
 
 No new media polish, visual ambition, or stronger product claims should outrun solver credibility.
 
 ## Current Milestone Sequence
 
-1. M4 credibility hardening.
-2. `v0.3` explicit current-state bypass hydraulics.
-3. `v0.4` limited solids consequence layer.
-4. Later operational expansion.
+1. `v0.3` explicit current-state bypass hydraulics.
+2. `v0.4` limited solids consequence layer.
+3. Later operational expansion.
 
 ## Repo Map
 
@@ -79,8 +80,11 @@ Source modules:
 Tests:
 
 - `tests/test_solver.py`: `v0.1` solver coverage.
+- `tests/test_solver_verification.py`: `v0.1` verification coverage against expected behavior.
 - `tests/test_longitudinal_solver.py`: `v0.2` solver coverage.
-- `tests/test_metrics.py`: planned synthetic metrics coverage.
+- `tests/test_longitudinal_solver_verification.py`: `v0.2` verification coverage against expected behavior.
+- `tests/test_metrics.py`: synthetic metrics coverage.
+- `tests/test_mesh_sensitivity.py`: `v0.2` mesh-sensitivity smoke checks.
 - `tests/test_study.py`: comparison-study workflow coverage.
 - `tests/test_cli.py`: command behavior.
 
@@ -114,9 +118,9 @@ Expected runtime:
 
 ## Do Not Do Next
 
-- Do not add solids modeling before M4 and `v0.3` bypass hydraulics are done.
+- Do not add solids modeling before `v0.3` bypass hydraulics are done.
 - Do not add new media polish as the main task.
-- Do not make stronger design/current claims until quality tiers support them.
+- Do not make stronger design/current claims than the current `run_quality_tier` supports.
 - Do not imply CFD, real-time SCADA coupling, calibration, or validated water-quality prediction.
 - Do not treat the current blocked-wall scenario as verified explicit bypass geometry.
 
@@ -126,5 +130,5 @@ Expected runtime:
 2. Read `docs/ROADMAP.md`.
 3. Read `docs/IMPLEMENTATION_PLAN.md`.
 4. Run `python -m unittest discover -s tests -v` with `PYTHONPATH=src`.
-5. Finish remaining M4 hardening: solver verification tests, metrics unit tests, solver docstrings, mesh sensitivity smoke checks, and quality-tier design.
-6. Only after M4 is complete, begin `v0.3` explicit bypass hydraulics.
+5. Confirm the current study still lands in the expected quality tier after any solver or schema change.
+6. Continue `v0.3` explicit bypass hydraulics: verified geometry capture, schema support, explicit routing, and design/current/proposed comparison support.

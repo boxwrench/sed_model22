@@ -28,7 +28,7 @@ Project state:
 
 Current implementation target:
 
-- finish M4 credibility hardening before any bypass or solids work
+- start `v0.3` explicit bypass hydraulics on top of the completed M4 credibility baseline
 - keep the first interface CLI + YAML
 - make outputs useful for plant operations, legible to operators, legible to managers, and suitable for portfolio review
 - preserve transparent screening claims rather than implying CFD, calibration, or digital-twin behavior
@@ -36,7 +36,7 @@ Current implementation target:
 Latest verification checkpoint:
 
 - `PYTHONPATH=src python3 -m unittest discover -s tests -v`
-- latest full-suite checkpoint: 34 passing tests outside sandbox at the latest code checkpoint
+- latest full-suite checkpoint: 41 passing tests outside sandbox at the latest code checkpoint
 - media and CLI subsets were rechecked during preview-animation work on 2026-03-27:
   - `python -m unittest tests.test_media -v`
   - `python -m unittest tests.test_cli -v`
@@ -44,7 +44,7 @@ Latest verification checkpoint:
 Current risk:
 
 - the shipped `v0.2` design-vs-current study is workflow-valid but numerically weak
-- convergence and discharge-balance issues mean the current study should be labeled `directional_only` or `weak` until quality tiers and M4 hardening support stronger interpretation
+- convergence and discharge-balance issues mean the current study remains correctly labeled `weak` under the current quality-tier rules
 - current-state bypass geometry is not verified and is still represented by proxy geometry
 
 ## Milestones
@@ -121,9 +121,9 @@ Definition of done:
 
 ### M4. Credibility Hardening
 
-Status: in progress
+Status: done
 
-This milestone gates `v0.3`. Do not begin bypass schema work, bypass solver work, or solids work until M4 is complete.
+This milestone gated `v0.3`. The baseline hardening work is now in place, and the next active work belongs in bypass hydraulics rather than more generic solver polish.
 
 Tasks:
 
@@ -134,22 +134,22 @@ Tasks:
 - [x] add a simple multi-scenario comparison workflow
 - [x] document RTD proxy constants and plate-settler conductance minimums in solver code
 - [x] add shared color scale for comparison renders
-- [ ] add solver verification tests against known analytical solutions
+- [x] add solver verification tests against known analytical solutions
   - `v0.1`: mass balance in empty basin, symmetric flow in symmetric basin
   - `v0.2`: uniform conductance gives expected head gradient; perforated baffle reduces downstream velocity
   - target: at least 3 physics-meaningful assertions per solver, runs in under 30 seconds total
   - expected files: `tests/test_solver_verification.py`, `tests/test_longitudinal_solver_verification.py`
-- [ ] add metrics unit tests with synthetic inputs
+- [x] add metrics unit tests with synthetic inputs
   - cover dead zone fraction, velocity uniformity index, and Morrill index
   - fast, isolated, formula-correctness focused
   - expected file: `tests/test_metrics.py`
-- [ ] add function-level docstrings to solver code
+- [x] add function-level docstrings to solver code
   - name the governing screening equation or proxy being solved
   - state the iteration scheme and convergence criteria
   - expected files: `src/sed_model22/solver/hydraulics.py`, `src/sed_model22/solver/longitudinal.py`, `src/sed_model22/metrics/longitudinal.py`
-- [ ] add mesh sensitivity smoke checks for the current `v0.2` comparison geometry
+- [x] add mesh sensitivity smoke checks for the current `v0.2` comparison geometry
   - check transition headloss, post-transition velocity uniformity, launder peak upward velocity, `t10`, `t50`, `t90`, and short-circuiting index
-- [ ] design and implement run quality tiers
+- [x] design and implement run quality tiers
   - add `run_quality_tier`
   - add `quality_reasons`
   - report `credible`, `directional_only`, or `weak`
@@ -165,7 +165,7 @@ Definition of done:
 
 ### v0.3. Explicit Bypass Hydraulics
 
-Status: gated by M4
+Status: active
 
 Goal:
 
@@ -224,12 +224,12 @@ Possible tasks:
 
 If work resumes after a break, do these next in order:
 
-1. Complete remaining M4 solver verification tests.
-2. Add synthetic metrics unit tests.
-3. Add solver and metrics docstrings that state the screening equations and iteration schemes.
-4. Add mesh sensitivity smoke checks for current `v0.2` comparison geometry.
-5. Add run quality tiers and make weak runs visible in summaries and study reports.
-6. Only after M4 is complete, begin `v0.3` explicit bypass hydraulics.
+1. Verify current-state bypass geometry before encoding it.
+2. Extend the scenario schema for explicit bypass-path geometry.
+3. Implement explicit bypass routing in the longitudinal solver.
+4. Add `baseline_case_label` and N-way design/current/proposed comparison support.
+5. Refresh the current-state scenario and rerun low, typical, and high-flow studies.
+6. Update interpretation and media/report language against the revised geometry and resulting quality tiers.
 7. Defer solids consequence modeling to `v0.4`.
 8. Keep `docs/SESSION_START_CONTEXT.md`, `docs/ROADMAP.md`, and this file aligned as the product boundary changes.
 
@@ -241,7 +241,7 @@ Before starting the next work block:
 2. Read `docs/ROADMAP.md`.
 3. Read this file.
 4. Read `docs/research/CANON.md` only when implementation details require the research basis.
-5. Read `docs/V0_3_ROADMAP.md` only after M4 work is complete or when planning bypass hydraulics.
+5. Read `docs/V0_3_ROADMAP.md` when planning or implementing bypass hydraulics.
 6. Review `templates/intake_geometry_survey.yaml` before translating drawing-derived geometry.
 7. Run the current smoke tests:
    - `PYTHONPATH=src python3 -m unittest discover -s tests -v`

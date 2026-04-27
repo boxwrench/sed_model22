@@ -11,7 +11,7 @@ Read these first:
 1. `docs/SESSION_START_CONTEXT.md` for fast restart context, current risks, commands, and the next safe work.
 2. `docs/ROADMAP.md` for the canonical product roadmap by usable plateau.
 3. `docs/IMPLEMENTATION_PLAN.md` for the active engineering pickup queue.
-4. `docs/V0_3_ROADMAP.md` only after M4 hardening is complete or when planning explicit bypass hydraulics.
+4. `docs/V0_3_ROADMAP.md` for the active explicit bypass-hydraulics workstream.
 
 ## Current Focus
 
@@ -20,7 +20,7 @@ The repo currently carries two screening workflows:
 - `v0.1` plan-view hydraulic screening for simple basin-layout checks
 - `v0.2` longitudinal `length x depth` screening for design-vs-current comparison
 
-The active focus is M4 credibility hardening:
+M4 credibility hardening is now in place:
 
 - solver verification tests
 - synthetic metrics unit tests
@@ -28,7 +28,9 @@ The active focus is M4 credibility hardening:
 - mesh sensitivity smoke checks
 - formal run quality tiers such as `credible`, `directional_only`, and `weak`
 
-Do not start bypass schema work, bypass solver work, or solids consequence modeling until M4 is complete.
+The active focus is now `v0.3` explicit current-state bypass hydraulics.
+
+Do not start solids consequence modeling until `v0.3` bypass hydraulics is complete.
 
 ## Product Direction
 
@@ -51,8 +53,8 @@ As of the latest documentation checkpoint:
 - `run-hydraulics` produces reproducible run bundles for both model forms
 - `compare-study` runs case-by-flow comparisons and writes JSON, CSV, Markdown, and media artifacts
 - shipped scenarios include a design-intent versus current-state `v0.2` study at low, typical, and high flow
-- the latest full test checkpoint is 34 passing tests outside sandbox
-- the shipped `v0.2` study is workflow-valid but numerically weak, so its conclusions should remain visibly bounded until quality tiers and M4 hardening support stronger claims
+- the latest full test checkpoint is 41 passing tests outside sandbox
+- the shipped `v0.2` study is workflow-valid, visibly quality-tiered, and still numerically weak; its conclusions should remain bounded by the current `run_quality_tier`
 
 Current supported solver boundary:
 
@@ -108,4 +110,4 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 
 ## Immediate Next Step
 
-Finish M4 credibility hardening, then add formal quality tiers so weak runs cannot be mistaken for strong engineering conclusions. Explicit current-state bypass hydraulics comes next in `v0.3`; solids consequence modeling waits for `v0.4`.
+Use the completed M4 baseline to start `v0.3` explicit current-state bypass hydraulics. Solids consequence modeling still waits for `v0.4`.

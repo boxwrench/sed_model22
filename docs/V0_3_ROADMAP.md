@@ -14,16 +14,16 @@ The current blocked-wall basin should stop being represented only as a lossy int
 
 Working rule:
 
-- complete M4 credibility hardening first
+- use the completed M4 credibility baseline
 - explicit bypass geometry before solids consequence modeling
 - preserve transparent screening scope and uncertainty
 - keep outputs useful to operators and managers without overstating numerical strength
 
 ## Preconditions
 
-Do not start `v0.3` schema or solver work until M4 is complete.
+M4 credibility hardening is now complete.
 
-Required M4 items:
+Completed M4 items:
 
 - solver verification tests against known analytical or expected screening-solver behavior
 - synthetic metrics unit tests
@@ -156,15 +156,14 @@ These are not part of `v0.3`:
 
 ## Recommended Execution Order
 
-1. Complete M4 credibility hardening.
-2. Verify bypass geometry using `templates/intake_geometry_survey.yaml` or equivalent structured notes.
-3. Extend schema for bypass-path geometry.
-4. Implement explicit bypass routing in the longitudinal solver.
-5. Add N-way comparison support with `baseline_case_label`.
-6. Refresh current-state and proposed scenarios.
-7. Re-run low, typical, and high-flow studies.
-8. Add mesh sensitivity checks on the revised geometry.
-9. Update report interpretation and quality-tier language.
+1. Verify bypass geometry using `templates/intake_geometry_survey.yaml` or equivalent structured notes.
+2. Extend schema for bypass-path geometry.
+3. Implement explicit bypass routing in the longitudinal solver.
+4. Add N-way comparison support with `baseline_case_label`.
+5. Refresh current-state and proposed scenarios.
+6. Re-run low, typical, and high-flow studies.
+7. Add mesh sensitivity checks on the revised geometry.
+8. Update report interpretation and quality-tier language.
 
 ## Definition of V0.3
 
