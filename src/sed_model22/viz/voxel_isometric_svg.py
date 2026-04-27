@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..config import (
+    ExplicitBypassPathFeatureConfig,
     LaunderZoneFeatureConfig,
     LongitudinalScenarioConfig,
     PerforatedBaffleFeatureConfig,
@@ -266,6 +267,31 @@ def _feature_prisms_svg(
                     "#991b1b",
                 )
             )
+            continue
+
+        if isinstance(feature, ExplicitBypassPathFeatureConfig):
+            x_start = (feature.x_start_m / scenario.geometry.basin_length_m) * x_count
+            x_end = (feature.x_end_m / scenario.geometry.basin_length_m) * x_count
+            z_bottom = (feature.z_bottom_m / scenario.geometry.water_depth_m) * z_count
+            z_top = (feature.z_top_m / scenario.geometry.water_depth_m) * z_count
+            shapes.append(
+                _prism_svg(
+                    x_start,
+                    x_end,
+                    0.0,
+                    float(y_count),
+                    z_bottom,
+                    z_top,
+                    tile_width,
+                    tile_height,
+                    z_scale,
+                    origin_x,
+                    origin_y,
+                    "#a855f7",
+                    0.26,
+                    "#7e22ce",
+                )
+            )
     return "\n".join(shapes)
 
 
@@ -356,6 +382,27 @@ def _annotation_svg(
                 "  <rect x='1072' y='362' width='228' height='44' rx='8' fill='#fef2f2' stroke='#fca5a5' stroke-width='1.5' />",
                 "  <text x='1084' y='382' font-family='monospace' font-size='13' font-weight='700' fill='#991b1b'>Launder collection zone</text>",
                 "  <text x='1084' y='398' font-family='monospace' font-size='12' fill='#7f1d1d'>Top boundary outlet span</text>",
+            ]
+        )
+
+    bypass_feature = next((feature for feature in scenario.features if isinstance(feature, ExplicitBypassPathFeatureConfig)), None)
+    if bypass_feature is not None:
+        bypass_point = _project_point(
+            (bypass_feature.x_end_m / scenario.geometry.basin_length_m) * x_count,
+            float(y_count),
+            (bypass_feature.z_top_m / scenario.geometry.water_depth_m) * z_count,
+            tile_width,
+            tile_height,
+            z_scale,
+            origin_x,
+            origin_y,
+        )
+        layers.extend(
+            [
+                f"  <line x1='{bypass_point[0]:.1f}' y1='{bypass_point[1]:.1f}' x2='1078' y2='452' stroke='#7e22ce' stroke-width='1.4' />",
+                "  <rect x='1082' y='422' width='236' height='44' rx='8' fill='#faf5ff' stroke='#d8b4fe' stroke-width='1.5' />",
+                f"  <text x='1094' y='442' font-family='monospace' font-size='13' font-weight='700' fill='#6b21a8'>Explicit bypass path</text>",
+                f"  <text x='1094' y='458' font-family='monospace' font-size='12' fill='#6b21a8'>{bypass_feature.path_type} corridor with {bypass_feature.geometry_confidence} confidence</text>",
             ]
         )
 

@@ -140,6 +140,39 @@ class StudyTests(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
+    def test_compare_study_respects_explicit_baseline_case_label(self) -> None:
+        temp_dir = ROOT / f"_study_test_tmp_{uuid4().hex}"
+        try:
+            temp_dir.mkdir(parents=True, exist_ok=False)
+            run_root = temp_dir / "runs"
+            study_payload = yaml.safe_load(STUDY_PATH.read_text(encoding="utf-8"))
+            study_payload["cases"][0]["label"] = "design_case"
+            study_payload["cases"][1]["label"] = "blocked_case"
+            study_payload["cases"] = [study_payload["cases"][1], study_payload["cases"][0]]
+            study_payload["baseline_case_label"] = "design_case"
+            for case in study_payload["cases"]:
+                case["scenario_path"] = str((ROOT / case["scenario_path"]).resolve())
+            study_payload["outputs"]["run_root"] = str(run_root)
+            temp_study_path = temp_dir / "study.yaml"
+            temp_study_path.write_text(yaml.safe_dump(study_payload, sort_keys=False), encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(["compare-study", str(temp_study_path)])
+
+            self.assertEqual(exit_code, 0)
+
+            study_dir = next(run_root.iterdir())
+            summary = json.loads((study_dir / "comparison_summary.json").read_text(encoding="utf-8"))
+            report_text = (study_dir / "comparison_report.md").read_text(encoding="utf-8")
+
+            self.assertEqual("design_case", summary["baseline_case_label"])
+            self.assertIn("| Metric | design_case | blocked_case | delta (blocked_case - design_case) |", report_text)
+            self.assertIn("Deltas are computed as `blocked_case - design_case`.", report_text)
+            self.assertIn("relative to `design_case`", report_text)
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()

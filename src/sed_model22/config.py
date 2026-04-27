@@ -9,7 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 BoundarySide = Literal["west", "east", "south", "north"]
 BaffleKind = Literal["full_depth_solid", "curtain_placeholder", "porous_placeholder"]
-FeatureKind = Literal["perforated_baffle", "solid_baffle", "plate_settler_zone", "launder_zone"]
+FeatureKind = Literal["perforated_baffle", "solid_baffle", "plate_settler_zone", "launder_zone", "explicit_bypass_path"]
+GeometryConfidence = Literal["high", "medium", "low"]
 
 OPPOSITE_SIDE = {
     "west": "east",
@@ -34,7 +35,7 @@ class LongitudinalMetadataConfig(BaseModel):
     case_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
     description: str | None = None
-    stage: Literal["v0.2"] = "v0.2"
+    stage: Literal["v0.2", "v0.3"] = "v0.2"
 
 
 class GeometryConfig(BaseModel):
@@ -277,11 +278,36 @@ class LaunderZoneFeatureConfig(BaseModel):
         return self
 
 
+class ExplicitBypassPathFeatureConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["explicit_bypass_path"]
+    name: str = Field(min_length=1)
+    path_type: Literal["over", "under", "side", "serpentine"]
+    x_start_m: float = Field(ge=0)
+    x_end_m: float = Field(gt=0)
+    z_bottom_m: float = Field(ge=0)
+    z_top_m: float = Field(gt=0)
+    open_area_fraction: float = Field(gt=0, le=1)
+    loss_scale: float = Field(default=1.0, gt=0)
+    geometry_confidence: GeometryConfidence = "low"
+    notes: str | None = None
+
+    @model_validator(mode="after")
+    def validate_geometry(self) -> "ExplicitBypassPathFeatureConfig":
+        if self.x_start_m >= self.x_end_m:
+            raise ValueError("explicit_bypass_path x_start_m must be below x_end_m")
+        if self.z_bottom_m >= self.z_top_m:
+            raise ValueError("explicit_bypass_path z_bottom_m must be below z_top_m")
+        return self
+
+
 FeatureConfig = Annotated[
     PerforatedBaffleFeatureConfig
     | SolidBaffleFeatureConfig
     | PlateSettlerZoneFeatureConfig
-    | LaunderZoneFeatureConfig,
+    | LaunderZoneFeatureConfig
+    | ExplicitBypassPathFeatureConfig,
     Field(discriminator="kind"),
 ]
 
@@ -373,6 +399,11 @@ class LongitudinalScenarioConfig(BaseModel):
                     raise ValueError(f"launder_zone '{feature.name}' must lie within basin length")
                 if feature.z_m > geometry.water_depth_m:
                     raise ValueError(f"launder_zone '{feature.name}' z_m must not exceed the water depth")
+            elif isinstance(feature, ExplicitBypassPathFeatureConfig):
+                if feature.x_start_m < 0.0 or feature.x_end_m > geometry.basin_length_m:
+                    raise ValueError(f"explicit_bypass_path '{feature.name}' must lie within basin length")
+                if feature.z_bottom_m < 0.0 or feature.z_top_m > geometry.water_depth_m:
+                    raise ValueError(f"explicit_bypass_path '{feature.name}' must lie within water depth")
 
         for station in self.evaluation_stations:
             if not (0.0 <= station.x_m <= geometry.basin_length_m):
@@ -425,6 +456,7 @@ class ComparisonStudyConfig(BaseModel):
     description: str | None = None
     cases: list[StudyCaseConfig] = Field(min_length=2)
     flows: list[StudyFlowConfig] = Field(min_length=1)
+    baseline_case_label: str | None = None
     outputs: ComparisonStudyOutputsConfig = Field(default_factory=ComparisonStudyOutputsConfig)
 
     @model_validator(mode="after")
@@ -436,6 +468,8 @@ class ComparisonStudyConfig(BaseModel):
             raise ValueError("study case labels must be unique")
         if len(set(flow_labels)) != len(flow_labels):
             raise ValueError("study flow labels must be unique")
+        if self.baseline_case_label is not None and self.baseline_case_label not in case_labels:
+            raise ValueError("baseline_case_label must match one of the study case labels")
         return self
 
 

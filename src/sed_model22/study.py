@@ -42,6 +42,8 @@ def run_comparison_study(study_path: str | Path) -> ComparisonStudyArtifacts:
     run_details: list[dict[str, object]] = []
     case_order = [case.label for case in study.cases]
     flow_order = [flow.label for flow in study.flows]
+    baseline_label = _baseline_label(study, case_order)
+    comparison_labels = _comparison_case_labels(case_order, baseline_label)
 
     for flow in study.flows:
         for case in study.cases:
@@ -88,6 +90,8 @@ def run_comparison_study(study_path: str | Path) -> ComparisonStudyArtifacts:
         study_dir=study_dir,
         rows=rows,
         run_details=run_details,
+        baseline_label=baseline_label,
+        comparison_labels=comparison_labels,
         case_order=case_order,
         flow_order=flow_order,
     )
@@ -119,6 +123,8 @@ def _write_comparison_json(
     study_dir: Path,
     rows: list[dict[str, object]],
     run_details: list[dict[str, object]],
+    baseline_label: str,
+    comparison_labels: list[str],
     case_order: list[str],
     flow_order: list[str],
 ) -> None:
@@ -129,12 +135,13 @@ def _write_comparison_json(
         "study_dir": str(study_dir),
         "cases": [case.model_dump(mode="json") for case in study.cases],
         "flows": [flow.model_dump(mode="json") for flow in study.flows],
+        "baseline_case_label": baseline_label,
         "outputs": study.outputs.model_dump(mode="json"),
         "case_order": case_order,
         "flow_order": flow_order,
         "rows": rows,
         "runs": run_details,
-        "delta_summary": _delta_summary(rows, case_order, flow_order),
+        "delta_summary": _delta_summary(rows, baseline_label, comparison_labels, flow_order),
     }
     summary_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
@@ -194,7 +201,8 @@ def _write_comparison_report(
     case_order: list[str],
     flow_order: list[str],
 ) -> None:
-    baseline_label, comparison_label = _comparison_labels(case_order)
+    baseline_label = _baseline_label(study, case_order)
+    comparison_labels = _comparison_case_labels(case_order, baseline_label)
     lines: list[str] = []
     lines.append(f"# {study.title}")
     if study.description:
@@ -226,49 +234,61 @@ def _write_comparison_report(
         lines.append("")
         lines.append("Quality status:")
         lines.extend(_flow_quality_lines(flow_rows, case_order))
-        lines.append("")
-        lines.append(_comparison_table(flow_rows, threshold_columns, case_order))
-        caution_lines = _flow_cautions(flow_rows, case_order, threshold_columns)
-        if caution_lines:
+        for comparison_label in comparison_labels:
             lines.append("")
-            lines.append("Screening cautions:")
-            lines.extend(caution_lines)
+            if len(comparison_labels) > 1:
+                lines.append(f"### {comparison_label} - {baseline_label}")
+                lines.append("")
+            lines.append(_comparison_table(flow_rows, threshold_columns, baseline_label, comparison_label))
+            caution_lines = _flow_cautions(flow_rows, baseline_label, comparison_label, threshold_columns)
+            if caution_lines:
+                lines.append("")
+                lines.append("Screening cautions:")
+                lines.extend(caution_lines)
 
     lines.append("")
     lines.append("## Delta Summary")
-    lines.append(f"Deltas are computed as `{comparison_label} - {baseline_label}`.")
+    if len(comparison_labels) == 1:
+        lines.append(f"Deltas are computed as `{comparison_labels[0]} - {baseline_label}`.")
+    else:
+        lines.append(f"Deltas are computed relative to `{baseline_label}`.")
     lines.append("")
     for flow_label in flow_order:
-        delta_rows = _delta_rows_for_flow(rows, flow_label, case_order, threshold_columns)
         lines.append(f"### {flow_label}")
-        lines.append(_delta_table(delta_rows, threshold_columns))
+        for comparison_label in comparison_labels:
+            delta_rows = _delta_rows_for_flow(rows, flow_label, baseline_label, comparison_label, threshold_columns)
+            if len(comparison_labels) > 1:
+                lines.append(f"#### {comparison_label} - {baseline_label}")
+            lines.append(_delta_table(delta_rows, threshold_columns))
+            lines.append("")
         lines.append("")
 
     lines.append("## Interpretation")
     for flow_label in flow_order:
-        delta = _delta_rows_for_flow(rows, flow_label, case_order, threshold_columns)
-        if not delta:
-            continue
-        rows_by_metric = {row["metric_key"]: row for row in delta}
-        lines.append(
-            f"- `{flow_label}` transition headloss in `{comparison_label}` is {_more_less_phrase(rows_by_metric['transition_headloss_m']['delta'])} relative to `{baseline_label}`."
-        )
-        lines.append(
-            f"- `{flow_label}` post-transition uniformity in `{comparison_label}` is {_better_worse_phrase(rows_by_metric['post_transition_velocity_uniformity_index']['delta'])} relative to `{baseline_label}`."
-        )
-        lines.append(
-            f"- `{flow_label}` RTD proxy timing shifts are: t10 {_earlier_later_phrase(rows_by_metric['t10_s']['delta'])}, t50 {_earlier_later_phrase(rows_by_metric['t50_s']['delta'])}, and t90 {_earlier_later_phrase(rows_by_metric['t90_s']['delta'])}."
-        )
-        lines.append(
-            f"- `{flow_label}` launder upwelling proxy in `{comparison_label}` is {_higher_lower_phrase(rows_by_metric['launder_peak_upward_velocity_m_s']['delta'])} relative to `{baseline_label}`."
-        )
-        threshold_summary = ", ".join(
-            f"{column.replace('settling_exceedance_', '').replace('_m_per_s', '').replace('_', '.')}: {_higher_lower_phrase(rows_by_metric[column]['delta'])}"
-            for column in threshold_columns
-        )
-        lines.append(
-            f"- `{flow_label}` settling-threshold exceedance in `{comparison_label}` is {threshold_summary} relative to `{baseline_label}`."
-        )
+        for comparison_label in comparison_labels:
+            delta = _delta_rows_for_flow(rows, flow_label, baseline_label, comparison_label, threshold_columns)
+            if not delta:
+                continue
+            rows_by_metric = {row["metric_key"]: row for row in delta}
+            lines.append(
+                f"- `{flow_label}` transition headloss in `{comparison_label}` is {_more_less_phrase(rows_by_metric['transition_headloss_m']['delta'])} relative to `{baseline_label}`."
+            )
+            lines.append(
+                f"- `{flow_label}` post-transition uniformity in `{comparison_label}` is {_better_worse_phrase(rows_by_metric['post_transition_velocity_uniformity_index']['delta'])} relative to `{baseline_label}`."
+            )
+            lines.append(
+                f"- `{flow_label}` RTD proxy timing shifts are: t10 {_earlier_later_phrase(rows_by_metric['t10_s']['delta'])}, t50 {_earlier_later_phrase(rows_by_metric['t50_s']['delta'])}, and t90 {_earlier_later_phrase(rows_by_metric['t90_s']['delta'])}."
+            )
+            lines.append(
+                f"- `{flow_label}` launder upwelling proxy in `{comparison_label}` is {_higher_lower_phrase(rows_by_metric['launder_peak_upward_velocity_m_s']['delta'])} relative to `{baseline_label}`."
+            )
+            threshold_summary = ", ".join(
+                f"{column.replace('settling_exceedance_', '').replace('_m_per_s', '').replace('_', '.')}: {_higher_lower_phrase(rows_by_metric[column]['delta'])}"
+                for column in threshold_columns
+            )
+            lines.append(
+                f"- `{flow_label}` settling-threshold exceedance in `{comparison_label}` is {threshold_summary} relative to `{baseline_label}`."
+            )
 
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -389,12 +409,13 @@ def _study_flow_media_template(
 def _comparison_table(
     flow_rows: list[dict[str, object]],
     threshold_columns: list[str],
-    case_order: list[str],
+    baseline_label: str,
+    comparison_label: str,
 ) -> str:
-    pair = _comparison_pair(flow_rows, case_order)
+    pair = _comparison_pair(flow_rows, baseline_label, comparison_label)
 
     lines = [
-        f"| Metric | {case_order[0]} | {case_order[1]} | delta ({case_order[1]} - {case_order[0]}) |",
+        f"| Metric | {baseline_label} | {comparison_label} | delta ({comparison_label} - {baseline_label}) |",
         "| --- | ---: | ---: | ---: |",
     ]
     if pair is not None:
@@ -452,11 +473,12 @@ def _table_metrics(threshold_columns: list[str]) -> list[dict[str, str]]:
 def _delta_rows_for_flow(
     rows: list[dict[str, object]],
     flow_label: str,
-    case_order: list[str],
+    baseline_label: str,
+    comparison_label: str,
     threshold_columns: list[str],
 ) -> list[dict[str, object]]:
     flow_rows = [row for row in rows if row["flow_label"] == flow_label]
-    pair = _comparison_pair(flow_rows, case_order)
+    pair = _comparison_pair(flow_rows, baseline_label, comparison_label)
     if pair is None:
         return []
     _, _, baseline, comparison = pair
@@ -484,13 +506,22 @@ def _delta_rows_for_flow(
 
 def _delta_summary(
     rows: list[dict[str, object]],
-    case_order: list[str],
+    baseline_label: str,
+    comparison_labels: list[str],
     flow_order: list[str],
-) -> dict[str, dict[str, float]]:
-    summary: dict[str, dict[str, float]] = {}
+) -> dict[str, object]:
+    summary: dict[str, object] = {}
     for flow_label in flow_order:
-        delta_rows = _delta_rows_for_flow(rows, flow_label, case_order, _threshold_columns(rows))
-        summary[flow_label] = {row["metric_key"]: row["delta"] for row in delta_rows}
+        if len(comparison_labels) == 1:
+            delta_rows = _delta_rows_for_flow(rows, flow_label, baseline_label, comparison_labels[0], _threshold_columns(rows))
+            summary[flow_label] = {row["metric_key"]: row["delta"] for row in delta_rows}
+            continue
+
+        per_comparison: dict[str, dict[str, float]] = {}
+        for comparison_label in comparison_labels:
+            delta_rows = _delta_rows_for_flow(rows, flow_label, baseline_label, comparison_label, _threshold_columns(rows))
+            per_comparison[comparison_label] = {row["metric_key"]: row["delta"] for row in delta_rows}
+        summary[flow_label] = per_comparison
     return summary
 
 
@@ -590,17 +621,21 @@ def _parse_quality_reasons(value: object) -> list[str]:
     return []
 
 
-def _comparison_labels(case_order: list[str]) -> tuple[str, str]:
+def _baseline_label(study: ComparisonStudyConfig, case_order: list[str]) -> str:
     if len(case_order) < 2:
         raise ValueError("comparison studies require at least two cases")
-    return case_order[0], case_order[1]
+    return study.baseline_case_label or case_order[0]
+
+
+def _comparison_case_labels(case_order: list[str], baseline_label: str) -> list[str]:
+    return [label for label in case_order if label != baseline_label]
 
 
 def _comparison_pair(
     flow_rows: list[dict[str, object]],
-    case_order: list[str],
+    baseline_label: str,
+    comparison_label: str,
 ) -> tuple[str, str, dict[str, object], dict[str, object]] | None:
-    baseline_label, comparison_label = _comparison_labels(case_order)
     by_case = {row["case_label"]: row for row in flow_rows}
     if baseline_label not in by_case or comparison_label not in by_case:
         return None
@@ -609,10 +644,11 @@ def _comparison_pair(
 
 def _flow_cautions(
     flow_rows: list[dict[str, object]],
-    case_order: list[str],
+    baseline_label: str,
+    comparison_label: str,
     threshold_columns: list[str],
 ) -> list[str]:
-    pair = _comparison_pair(flow_rows, case_order)
+    pair = _comparison_pair(flow_rows, baseline_label, comparison_label)
     if pair is None:
         return []
 

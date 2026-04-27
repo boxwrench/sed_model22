@@ -94,9 +94,61 @@ class LongitudinalSolverVerificationTests(unittest.TestCase):
         self.assertTrue(wall_summary.converged)
         self.assertGreater(wall_gap, uniform_gap * 10.0)
 
+    def test_explicit_bypass_path_reopens_flow_through_otherwise_blocked_wall(self) -> None:
+        base_scenario = self._build_uniform_conductance_scenario()
+        mesh = build_longitudinal_mesh(base_scenario)
+        face_index = 5
+        wall_x_m = face_index * mesh.dx_m
+        water_depth_m = base_scenario.geometry.water_depth_m
+
+        blocked_data = base_scenario.model_dump()
+        blocked_data["metadata"]["stage"] = "v0.3"
+        blocked_data["features"].extend(
+            [
+                {
+                    "kind": "solid_baffle",
+                    "name": "blocked_transition_wall",
+                    "x_m": wall_x_m,
+                    "z_bottom_m": 0.0,
+                    "z_top_m": water_depth_m,
+                    "plate_thickness_m": 0.02,
+                    "loss_scale": 1.0,
+                }
+            ]
+        )
+        blocked_scenario = LongitudinalScenarioConfig.model_validate(blocked_data)
+        blocked_mesh = build_longitudinal_mesh(blocked_scenario)
+        blocked_summary, blocked_fields = solve_steady_longitudinal_screening_flow(blocked_scenario, blocked_mesh)
+
+        bypass_data = blocked_scenario.model_dump()
+        bypass_data["features"].append(
+            {
+                "kind": "explicit_bypass_path",
+                "name": "top_bypass_slot",
+                "path_type": "over",
+                "x_start_m": wall_x_m - blocked_mesh.dx_m,
+                "x_end_m": wall_x_m,
+                "z_bottom_m": 0.72 * water_depth_m,
+                "z_top_m": water_depth_m,
+                "open_area_fraction": 0.22,
+                "loss_scale": 1.0,
+                "geometry_confidence": "medium",
+            }
+        )
+        bypass_scenario = LongitudinalScenarioConfig.model_validate(bypass_data)
+        bypass_mesh = build_longitudinal_mesh(bypass_scenario)
+        bypass_summary, bypass_fields = solve_steady_longitudinal_screening_flow(bypass_scenario, bypass_mesh)
+
+        self.assertLess(bypass_summary.mass_balance_error, blocked_summary.mass_balance_error)
+        self.assertLess(bypass_summary.max_velocity_m_s, blocked_summary.max_velocity_m_s)
+        self.assertLess(bypass_summary.blocked_face_count, blocked_summary.blocked_face_count)
+        self.assertIn("explicit bypass-path screening on the longitudinal grid", bypass_summary.supported_scope)
+        self.assertTrue(any("Explicit bypass paths reopen" in note for note in bypass_summary.notes))
+
     @staticmethod
     def _column_mean(values: list[float]) -> float:
         return sum(values) / len(values)
+
 
 
 if __name__ == "__main__":

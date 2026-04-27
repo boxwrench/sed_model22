@@ -7,6 +7,7 @@ import math
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..config import (
+    ExplicitBypassPathFeatureConfig,
     LaunderZoneFeatureConfig,
     LongitudinalScenarioConfig,
     PerforatedBaffleFeatureConfig,
@@ -227,6 +228,11 @@ def solve_steady_longitudinal_screening_flow(
             f"Mesh sized at {mesh.nx} x {mesh.nz} cells.",
         ],
     )
+    if any(isinstance(feature, ExplicitBypassPathFeatureConfig) for feature in scenario.features):
+        summary.supported_scope.append("explicit bypass-path screening on the longitudinal grid")
+        summary.notes.append(
+            "Explicit bypass paths reopen a bounded conductance corridor through otherwise blocked or lossy geometry."
+        )
 
     fields = LongitudinalFieldData(
         x_centers_m=[(index + 0.5) * mesh.dx_m for index in range(mesh.nx)],
@@ -509,6 +515,29 @@ def _apply_feature_conductance_modifiers(
                         continue
                     z_modifier = (1.0 - overlap) + (overlap * kz)
                     z_face_conductance[i][k] *= z_modifier
+            continue
+
+        if isinstance(feature, ExplicitBypassPathFeatureConfig):
+            feature_conductance = _perforated_baffle_conductance(feature.open_area_fraction, feature.loss_scale)
+            for i in range(1, mesh.nx):
+                face_position = i * mesh.dx_m
+                if not (feature.x_start_m <= face_position <= feature.x_end_m):
+                    continue
+                x_fraction = _interval_overlap_fraction(
+                    (i - 1) * mesh.dx_m,
+                    i * mesh.dx_m,
+                    feature.x_start_m,
+                    feature.x_end_m,
+                )
+                for k in range(mesh.nz):
+                    row_lower = k * mesh.dz_m
+                    row_upper = (k + 1) * mesh.dz_m
+                    z_fraction = _interval_overlap_fraction(row_lower, row_upper, feature.z_bottom_m, feature.z_top_m)
+                    overlap = min(x_fraction, z_fraction)
+                    if overlap <= 0.0:
+                        continue
+                    bypass_conductance = overlap * feature_conductance
+                    x_face_conductance[i][k] = max(x_face_conductance[i][k], bypass_conductance)
 
 
 def _solve_head_field(

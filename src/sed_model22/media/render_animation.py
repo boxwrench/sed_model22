@@ -303,6 +303,12 @@ def _render_basin_frame(
             x0 = plot_x0 + int((feature.x_start_m / scenario.geometry.basin_length_m) * (plot_x1 - plot_x0))
             x1 = plot_x0 + int((feature.x_end_m / scenario.geometry.basin_length_m) * (plot_x1 - plot_x0))
             _fill_rect(image, width, x0, plot_y0, x1, plot_y0 + 6, (239, 68, 68))
+        elif feature.kind == "explicit_bypass_path":
+            x0 = plot_x0 + int((feature.x_start_m / scenario.geometry.basin_length_m) * (plot_x1 - plot_x0))
+            x1 = plot_x0 + int((feature.x_end_m / scenario.geometry.basin_length_m) * (plot_x1 - plot_x0))
+            y0 = plot_y1 - int((feature.z_top_m / scenario.geometry.water_depth_m) * (plot_y1 - plot_y0))
+            y1 = plot_y1 - int((feature.z_bottom_m / scenario.geometry.water_depth_m) * (plot_y1 - plot_y0))
+            _stroke_rect(image, width, x0, y0, x1, y1, (126, 34, 206), 2)
 
     _draw_text(image, width, plot_x0 + 8, plot_y0 + 8, "FLOW FIELD", scale=2, color=(15, 23, 42))
     _draw_text(image, width, plot_x0 + 8, plot_y0 + 34, f"REVEAL {int(reveal_fraction * 100):02d} PERCENT", scale=1, color=(71, 85, 105))
