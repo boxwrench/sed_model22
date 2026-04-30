@@ -22,6 +22,7 @@ Project state:
 - study-level media packaging now exists for `compare-study` outputs
 - a geometry intake template now exists under `templates/` for drawing-to-scenario capture
 - the next-fidelity direction is now documented in `docs/V0_3_ROADMAP.md`
+- the current `v0.2` blocked-wall scenario now uses provisional explicit top/bottom bypass openings instead of a nearly closed perforated-wall proxy
 - dye-pulse and more elaborate visualization methods remain deferred until their proxy framing is clearly bounded
 
 Current implementation target:
@@ -37,6 +38,15 @@ Latest verification checkpoint:
 
 - `PYTHONPATH=src python3 -m unittest discover -s tests -v`
 - latest full-suite checkpoint: 34 passing tests on 2026-03-29
+- latest full-suite checkpoint on 2026-04-11:
+  - `python -m unittest discover -s tests -v`
+  - 45 passing tests on the current machine
+- latest focused M4 verification checkpoint on 2026-04-11:
+  - `python -m unittest tests.test_solver_verification tests.test_longitudinal_solver_verification tests.test_metrics tests.test_mesh_sensitivity -v`
+  - 9 passing tests covering solver verification, synthetic metric correctness, and v0.2 mesh-sensitivity smoke checks
+- latest explicit-bypass checkpoint on 2026-04-11:
+  - `python -m unittest tests.test_config_v2 tests.test_longitudinal_solver tests.test_study tests.test_mesh_sensitivity tests.test_voxel_visualization -v`
+  - 18 passing tests covering schema support, explicit bypass routing, study/report wording, mesh-direction stability, and visualization labels
 - media and CLI subsets were rechecked during preview-animation work on 2026-03-27:
   - `python -m unittest tests.test_media -v`
   - `python -m unittest tests.test_cli -v`
@@ -111,28 +121,28 @@ Definition of done:
 
 ### M4. Verification and Engineering Metrics
 
-Status: in progress
+Status: done
 
 Tasks:
 
 - [x] add mass-conservation checks
 - [x] add an empty rectangular basin verification case
 - [x] add a single-baffle verification case
-- [ ] add mesh sensitivity smoke checks (v0.2 geometry; prerequisite for V0.3)
+- [x] add mesh sensitivity smoke checks (v0.2 geometry; prerequisite for V0.3)
 - [x] connect solver outputs to comparison-ready engineering metrics
 - [x] add a simple multi-scenario comparison workflow
 - [x] document RTD proxy constants and plate-settler conductance minimums (solver/longitudinal.py)
 - [x] add shared color scale for comparison renders (render_still.py passes shared_vmax)
-- [ ] add solver verification tests against known analytical solutions
+- [x] add solver verification tests against known analytical solutions
   - v0.1: mass balance in empty basin, symmetric flow in symmetric basin
   - v0.2: uniform conductance → expected head gradient; perforated baffle → reduced downstream velocity
   - target: ≥3 physics-meaningful assertions per solver, runs in <30s total
   - files: tests/test_solver_verification.py, tests/test_longitudinal_solver_verification.py
-- [ ] add metrics unit tests with synthetic inputs
+- [x] add metrics unit tests with synthetic inputs
   - cover dead zone fraction, velocity uniformity index, Morrill index
   - fast, isolated, formula-correctness focused (no full solver run required)
   - file: tests/test_metrics.py
-- [ ] add function-level docstrings to solver code
+- [x] add function-level docstrings to solver code
   - state the PDE being solved (Laplace ∇²h = 0) and iteration scheme (Gauss-Seidel with SOR)
   - files: src/sed_model22/solver/hydraulics.py, src/sed_model22/solver/longitudinal.py, src/sed_model22/metrics/longitudinal.py
 
@@ -144,8 +154,7 @@ Definition of done:
 - output summaries can distinguish between simple geometry cases
 - at least one comparison-oriented workflow exists for alternative configurations
 
-**V0.3 is gated on M4 completion.** The bypass geometry work requires a credible hydraulic baseline.
-Do not begin V0.3 schema or solver work until the remaining M4 tasks above are done.
+**M4 is complete.** The hydraulic baseline now has the planned credibility checks required to begin the next geometry-fidelity pass.
 
 ### M5. Tracer and Residence-Time Layer
 
@@ -171,13 +180,11 @@ Tasks:
 
 If work resumes after a break, do these next in order:
 
-1. Complete the remaining M4 tasks (solver verification tests, metrics unit tests, solver docstrings) — required before V0.3.
-2. Add mesh sensitivity smoke checks for the current v0.2 comparison geometry.
-3. Extend the longitudinal schema and solver for explicit current-state bypass geometry using the new intake geometry template.
-4. Refresh the current-state scenario and rerun the shipped design-versus-current study on the revised geometry.
-5. Keep improving the study-level media package, especially a flow-level landing page across low / typical / high flow.
-6. Start the limited multi-class solids design work defined in `docs/V0_3_ROADMAP.md`.
-7. Keep `docs/research/CANON.md` and the roadmap docs aligned with the active solver boundary.
+1. Replace the provisional current-state bypass-opening dimensions with translated intake-survey / field-verified geometry and rerun the shipped design-versus-current study on that revised case.
+2. Add the formal run-quality / confidence tier outlined in `docs/V0_3_ROADMAP.md` so directional-only runs are labeled consistently across summaries, reports, and media.
+3. Keep improving the study-level media package, especially a flow-level landing page across low / typical / high flow.
+4. Start the limited multi-class solids design work defined in `docs/V0_3_ROADMAP.md` once the current-state bypass geometry is verified enough to treat as the hydraulic baseline.
+5. Keep `docs/research/CANON.md` and the roadmap docs aligned with the active solver boundary.
 
 ## Session Restart Checklist
 

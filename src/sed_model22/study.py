@@ -216,6 +216,14 @@ def _write_comparison_report(
             "- When the solver discharge mismatch diagnostic is large, absolute velocity values should be read as directional screening proxies, not literal field-credible m/s predictions.",
         ]
     )
+    if any(bool(row.get("explicit_bypass_representation")) for row in rows):
+        lines.append(
+            "- Provisional explicit bypass-opening features are included where current-state geometry is uncertain; dimensions remain assumptions until intake-survey or field verification is translated into the model."
+        )
+    else:
+        lines.append(
+            "- Missing explicit bypass-path geometry remains a model limitation where current-state wall openings or overflow/underflow routes are not yet documented."
+        )
 
     for flow_label in flow_order:
         flow_rows = [row for row in rows if row["flow_label"] == flow_label]
@@ -509,6 +517,10 @@ def _comparison_row(
         "solver_mass_balance_error": solver["mass_balance_error"],
         "solver_max_velocity_m_s": solver["max_velocity_m_s"],
         "solver_max_upward_velocity_m_s": solver["max_upward_velocity_m_s"],
+        "explicit_bypass_representation": any(
+            feature.get("kind") == "bypass_opening"
+            for feature in summary.get("features", [])
+        ),
         "basin_area_m2": metrics["basin_area_m2"],
         "basin_volume_m3": metrics["basin_volume_m3"],
         "theoretical_detention_time_s": metrics["theoretical_detention_time_s"],
@@ -596,8 +608,14 @@ def _flow_cautions(
         float(baseline.get("launder_peak_upward_velocity_m_s", 0.0)),
     )
     if peak_ratio >= 10.0:
+        comparison_has_explicit_bypass = bool(comparison.get("explicit_bypass_representation"))
         cautions.append(
-            f"- `{comparison_label}` is driving an extreme increase in the launder upwelling proxy relative to `{baseline_label}`. In the current model form this may reflect both a real directional warning and any missing explicit bypass-path representation."
+            (
+                f"- `{comparison_label}` is driving an extreme increase in the launder upwelling proxy relative to `{baseline_label}`. "
+                "In the current model form this should be treated as a directional warning while any provisional bypass-opening dimensions remain unverified."
+                if comparison_has_explicit_bypass
+                else f"- `{comparison_label}` is driving an extreme increase in the launder upwelling proxy relative to `{baseline_label}`. In the current model form this may reflect both a real directional warning and any missing explicit bypass-path representation."
+            )
         )
 
     return cautions

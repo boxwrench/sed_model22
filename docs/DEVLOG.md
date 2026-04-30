@@ -2,6 +2,70 @@
 
 This log is meant to stay short, chronological, and implementation-facing. Each entry should capture the repo state change, the reason for it, and the next immediate move.
 
+## 2026-04-11
+
+### Explicit Current-State Bypass Geometry
+
+What changed:
+
+- added `bypass_opening` support to the `v0.2` longitudinal schema and face-conductance solver so blocked-wall scenarios can reopen specific top/bottom wall spans explicitly
+- replaced the current blocked-wall scenario's nearly closed perforated-wall proxy with a solid transition wall plus provisional explicit underflow and overflow bypass openings
+- updated the study/report layer to flag explicit bypass representation and to describe the current geometry as provisional until intake-survey or field verification is translated
+- updated the longitudinal layout SVG and voxel visualization so the blocked wall and explicit bypass openings are legible in artifacts
+- refreshed solver, study, mesh-sensitivity, config, and visualization tests to match the new current-state representation and directional signals
+
+Why:
+
+- the old lossy-wall proxy hid the plant's actual over/under bypass behavior inside one wall-loss number, which was too lossy for the next decision-useful pass
+- the repo needed the dominant current-state hydraulic feature to appear in geometry and outputs, not only in caution text
+- once explicit openings are present, downstream comparison direction can change, so tests and report language needed to assert stability honestly instead of clinging to the earlier proxy result
+
+Verification:
+
+- `python -m unittest tests.test_config_v2 tests.test_longitudinal_solver tests.test_study tests.test_mesh_sensitivity tests.test_voxel_visualization -v` passed with 18 tests
+- `python -m unittest discover -s tests -v` passed with 45 tests
+
+Current interpretation:
+
+- the current-state `v0.2` model now includes provisional explicit bypass routing rather than only a blocked perforated-wall proxy
+- the design-vs-current directional signal remains meaningfully different after the geometry change, but some metric directions changed relative to the earlier lossy-wall surrogate and should now be interpreted from the revised study outputs
+- the next credibility bottleneck is no longer "add any explicit bypass representation"; it is "replace the provisional openings with verified dimensions"
+
+Next:
+
+- translate the actual intake geometry survey / field notes into verified current-state bypass dimensions and rerun the shipped study on that geometry
+
+### M4 Verification Coverage and Solver Docstrings
+
+What changed:
+
+- added dedicated plan-view verification tests for the empty-basin linear-head solution and a centered-opening symmetry case
+- added dedicated longitudinal verification tests for the uniform-conductance head-gradient case and perforated-wall redistribution behavior
+- added synthetic unit tests for dead zone fraction, post-transition velocity uniformity, Morrill index, and related threshold metrics
+- added `v0.2` mesh-sensitivity smoke checks that compare the shipped design/current longitudinal scenarios across coarse and baseline meshes
+- added function-level docstrings to the plan-view solver, longitudinal solver, and longitudinal metrics code describing the governing screening equation and Gauss-Seidel/SOR iteration scheme
+
+Why:
+
+- the implementation plan explicitly gated `v0.3` on the remaining `M4` credibility work
+- the repo needed solver checks that are more meaningful than smoke tests and easier to audit than reverse-engineering the code path
+- the metrics layer needed formula-level tests that do not depend on a full solver run
+
+Verification:
+
+- `python -m unittest tests.test_solver_verification tests.test_longitudinal_solver_verification tests.test_metrics tests.test_mesh_sensitivity -v` passed with 9 tests
+- `python -m unittest discover -s tests -v` passed with 45 tests after fixing the local Python 3.14 Windows tempfile directory behavior for this machine
+
+Current interpretation:
+
+- the planned `M4` credibility work is now complete
+- the solver and metrics layers now have direct regression tests for the specific credibility claims called out in `docs/IMPLEMENTATION_PLAN.md`
+- the repo currently has a clean full-suite checkpoint again on this machine
+
+Next:
+
+- keep the verification checkpoint as the hydraulic baseline while the next sessions focus on verified current-state geometry and post-bypass study interpretation
+
 ## 2026-03-28
 
 ### Study-Level Media Packaging and Geometry Intake Tightening

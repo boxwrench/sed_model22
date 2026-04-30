@@ -1,3 +1,5 @@
+"""Plan-view steady screening hydraulics on a structured Cartesian grid."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel
@@ -42,6 +44,17 @@ def solve_steady_screening_flow(
     mesh: MeshSummary,
     metrics: ScenarioMetrics,
 ) -> tuple[HydraulicsSolutionSummary, HydraulicFieldData]:
+    """Solve the v0.1 plan-view potential-flow screening problem.
+
+    The governing field is a dimensionless hydraulic head ``h`` that satisfies the
+    steady Laplace equation ``∇²h = 0`` inside the basin, with Dirichlet boundary
+    values applied at inlet and outlet openings and zero-normal-flux conditions on
+    solid walls and baffles.
+
+    The discrete system is assembled on a cell-centered Cartesian mesh and solved by
+    Gauss-Seidel iteration with successive over-relaxation (SOR). After convergence,
+    the gradient field is rescaled so the inlet discharge matches the requested flow.
+    """
     x_blocked, y_blocked, ignored_baffles = _build_blocked_faces(scenario, mesh)
     inlet_cells = _boundary_cells(scenario.inlet, mesh)
     outlet_cells = _boundary_cells(scenario.outlet, mesh)
@@ -204,6 +217,13 @@ def _solve_head_field(
     x_blocked: list[list[bool]],
     y_blocked: list[list[bool]],
 ) -> tuple[int, bool, float]:
+    """Iterate the discrete Laplace solve with Gauss-Seidel SOR updates.
+
+    Each cell update enforces the local finite-difference balance for ``∇²h = 0``,
+    with impermeable walls represented by zero-flux faces and openings represented by
+    fixed head values. The returned ``max_delta`` is the largest per-cell head update
+    from the final iteration.
+    """
     dx_coef = 1.0 / (mesh.dx_m * mesh.dx_m)
     dy_coef = 1.0 / (mesh.dy_m * mesh.dy_m)
     max_delta = 0.0

@@ -34,6 +34,11 @@ class ConfigV2Tests(unittest.TestCase):
         self.assertEqual(scenario.metadata.case_id, "svwtp_design_spec")
         self.assertEqual(len(scenario.features), 3)
 
+    def test_current_blocked_wall_uses_explicit_bypass_openings(self) -> None:
+        scenario = load_scenario(ROOT / "scenarios" / "svwtp_current_blocked_wall_basin.yaml")
+        self.assertIsInstance(scenario, LongitudinalScenarioConfig)
+        self.assertGreaterEqual(sum(1 for feature in scenario.features if feature.kind == "bypass_opening"), 1)
+
     def test_study_file_validates(self) -> None:
         study = load_study(STUDY_PATH)
         self.assertIsInstance(study, ComparisonStudyConfig)

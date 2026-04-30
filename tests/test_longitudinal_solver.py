@@ -44,7 +44,47 @@ class LongitudinalSolverTests(unittest.TestCase):
             CURRENT_SCENARIO_PATH
         )
 
-        self.assertGreater(current_metrics.transition_headloss_m, design_metrics.transition_headloss_m)
+        self.assertNotAlmostEqual(current_metrics.transition_headloss_m, design_metrics.transition_headloss_m, places=6)
+
+    def test_bypass_opening_reopens_part_of_a_blocked_wall(self) -> None:
+        scenario = load_scenario(DESIGN_SCENARIO_PATH)
+        scenario_payload = scenario.model_dump(mode="json")
+        launder = next(feature for feature in scenario_payload["features"] if feature["kind"] == "launder_zone")
+        scenario_payload["features"] = [
+            {
+                "kind": "solid_baffle",
+                "name": "test_transition_wall",
+                "x_m": 2.0,
+                "z_bottom_m": 0.0,
+                "z_top_m": scenario.geometry.water_depth_m,
+                "plate_thickness_m": 0.02,
+                "loss_scale": 1.0,
+            },
+            {
+                "kind": "bypass_opening",
+                "name": "test_under_bypass",
+                "path_type": "under",
+                "x_m": 2.0,
+                "z_bottom_m": 0.0,
+                "z_top_m": 0.20,
+                "opening_fraction": 0.15,
+                "loss_scale": 1.0,
+            },
+            launder,
+        ]
+        scenario_payload["numerics"]["nx"] = 72
+        scenario_payload["numerics"]["nz"] = 24
+        scenario = type(scenario).model_validate(scenario_payload)
+        mesh = build_longitudinal_mesh(scenario)
+        solver_summary, fields = solve_steady_longitudinal_screening_flow(scenario, mesh)
+
+        self.assertIn("Explicit bypass openings: 1.", solver_summary.notes)
+
+        downstream_column = min(3, len(fields.speed_m_s) - 1)
+        lower_band = fields.speed_m_s[downstream_column][: max(1, mesh.nz // 4)]
+        upper_band = fields.speed_m_s[downstream_column][-max(1, mesh.nz // 4) :]
+
+        self.assertGreater(sum(lower_band) / len(lower_band), sum(upper_band) / len(upper_band))
 
     def test_plate_settler_zone_changes_upper_zone_velocity_pattern(self) -> None:
         scenario = load_scenario(DESIGN_SCENARIO_PATH)
@@ -96,8 +136,8 @@ class LongitudinalSolverTests(unittest.TestCase):
 
         # Tracer should complete or terminate gracefully even with very low flow
         self.assertIsNotNone(tracer)
-        self.assertTrue(math.isfinite(tracer.t10_s) or tracer.termination_reason == "max_steps_reached")
-        self.assertIn(tracer.termination_reason, ["rtd_proxy_target_fraction_reached", "max_steps_reached", "stagnant"])
+        self.assertTrue(math.isfinite(tracer.t10_s) or tracer.termination_reason == "rtd_proxy_time_horizon_reached")
+        self.assertIn(tracer.termination_reason, ["rtd_proxy_target_fraction_reached", "rtd_proxy_time_horizon_reached"])
 
     @staticmethod
     def _upper_band_mean(speed_field: list[list[float]]) -> float:

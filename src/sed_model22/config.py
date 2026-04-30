@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 BoundarySide = Literal["west", "east", "south", "north"]
 BaffleKind = Literal["full_depth_solid", "curtain_placeholder", "porous_placeholder"]
-FeatureKind = Literal["perforated_baffle", "solid_baffle", "plate_settler_zone", "launder_zone"]
+FeatureKind = Literal["perforated_baffle", "solid_baffle", "plate_settler_zone", "launder_zone", "bypass_opening"]
 
 OPPOSITE_SIDE = {
     "west": "east",
@@ -277,11 +277,31 @@ class LaunderZoneFeatureConfig(BaseModel):
         return self
 
 
+class BypassOpeningFeatureConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["bypass_opening"]
+    name: str = Field(min_length=1)
+    path_type: Literal["over", "under", "side", "serpentine"]
+    x_m: float = Field(ge=0)
+    z_bottom_m: float = Field(ge=0)
+    z_top_m: float = Field(gt=0)
+    opening_fraction: float = Field(default=1.0, gt=0, le=1)
+    loss_scale: float = Field(default=1.0, gt=0)
+
+    @model_validator(mode="after")
+    def validate_geometry(self) -> "BypassOpeningFeatureConfig":
+        if self.z_bottom_m >= self.z_top_m:
+            raise ValueError("bypass_opening z_bottom_m must be below z_top_m")
+        return self
+
+
 FeatureConfig = Annotated[
     PerforatedBaffleFeatureConfig
     | SolidBaffleFeatureConfig
     | PlateSettlerZoneFeatureConfig
-    | LaunderZoneFeatureConfig,
+    | LaunderZoneFeatureConfig
+    | BypassOpeningFeatureConfig,
     Field(discriminator="kind"),
 ]
 
@@ -373,6 +393,11 @@ class LongitudinalScenarioConfig(BaseModel):
                     raise ValueError(f"launder_zone '{feature.name}' must lie within basin length")
                 if feature.z_m > geometry.water_depth_m:
                     raise ValueError(f"launder_zone '{feature.name}' z_m must not exceed the water depth")
+            elif isinstance(feature, BypassOpeningFeatureConfig):
+                if not (0.0 < feature.x_m < geometry.basin_length_m):
+                    raise ValueError(f"bypass_opening '{feature.name}' x_m must lie inside the basin interior")
+                if feature.z_bottom_m < 0.0 or feature.z_top_m > geometry.water_depth_m:
+                    raise ValueError(f"bypass_opening '{feature.name}' vertical span must lie within the water depth")
 
         for station in self.evaluation_stations:
             if not (0.0 <= station.x_m <= geometry.basin_length_m):

@@ -44,6 +44,13 @@ def compute_longitudinal_metrics(
     fields: LongitudinalFieldData,
     tracer: LongitudinalTracerSummary,
 ) -> LongitudinalMetrics:
+    """Derive screening metrics from the steady longitudinal field and RTD proxy.
+
+    This module does not solve another PDE. It turns the existing steady
+    conductance-weighted field and the synthetic tracer quantiles into compact
+    engineering indicators for comparison workflows, using fixed station locations and
+    scenario-defined proxy thresholds.
+    """
     basin_area_m2 = scenario.geometry.basin_length_m * scenario.geometry.basin_width_m
     basin_volume_m3 = basin_area_m2 * scenario.geometry.water_depth_m
     theoretical_detention_time_s = basin_volume_m3 / scenario.hydraulics.flow_rate_m3_s

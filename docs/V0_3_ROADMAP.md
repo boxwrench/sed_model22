@@ -15,29 +15,29 @@ That only becomes credible if the current-state geometry is represented honestly
 
 Working rule:
 
-- explicit bypass geometry before solids consequence modeling
+- verified explicit bypass geometry before solids consequence modeling
 - modest solids classes before pseudo-transient or 3D ambitions
 - preserve the repo's current honesty about screening scope and uncertainty
 
 ## Must Have
 
-### 1. Explicit Current-State Bypass Geometry
+### 1. Verify and Refine Explicit Current-State Bypass Geometry
 
-The current blocked-wall basin should stop being represented only as a lossy interface when the real basin still passes flow through an over/under or serpentine bypass path.
+The current blocked-wall basin now includes provisional explicit top/bottom bypass openings, but those dimensions still need to be reconciled against the translated intake survey and any field observations.
 
 Required outcome:
 
-- represent the real current-state flow path explicitly
-- let the solver route flow through that path directly
-- update the current-state scenario so the dominant hydraulic feature is in geometry, not only in notes
+- replace the provisional openings with verified current-state geometry
+- let the solver route flow through that verified path directly
+- update the current-state scenario and study outputs so the dominant hydraulic feature is both explicit and defensible
 
 Why this is first:
 
 - if the bypass path is wrong, then downstream redistribution, launder approach, and later solids conclusions will all be built on the wrong hydraulic picture
 
-### 2. Schema Support for Bypass Features
+### 2. Extend Schema Support Only Where Verified Geometry Demands It
 
-Add scenario support for explicit bypass-path geometry.
+The repo already has baseline `bypass_opening` support. Extend it only if the translated geometry requires more detail than the current provisional openings capture.
 
 Minimum fields should support:
 
@@ -49,9 +49,9 @@ Minimum fields should support:
 
 This should stay CLI/YAML-first and remain readable to humans.
 
-### 3. Solver Support for Explicit Bypass Routing
+### 3. Refine Solver Support for Verified Bypass Routing
 
-The longitudinal solver should move from a wall-loss approximation to a geometry-aware routing representation for the current-state path.
+The longitudinal solver already supports simple explicit bypass openings. The next refinement is to make sure the routing matches the verified current-state path closely enough for the next study baseline.
 
 In scope:
 
@@ -185,8 +185,8 @@ to tighten confidence in the screening workflow.
 
 ## Pre-V0.3 Engineering Hardening
 
-These items come from a project review (April 2026) and must be done before V0.3 solver work begins.
-They are tracked as M4 remaining tasks in `docs/IMPLEMENTATION_PLAN.md`.
+These items came from a project review (April 2026) and were required before V0.3 solver work began.
+They are now complete and remain listed here so the gating logic stays explicit.
 
 **Required before V0.3 schema work starts:**
 

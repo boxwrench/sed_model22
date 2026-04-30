@@ -1,3 +1,5 @@
+"""Longitudinal steady screening hydraulics and RTD proxies."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -7,6 +9,7 @@ import math
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..config import (
+    BypassOpeningFeatureConfig,
     LaunderZoneFeatureConfig,
     LongitudinalScenarioConfig,
     PerforatedBaffleFeatureConfig,
@@ -75,6 +78,17 @@ def solve_steady_longitudinal_screening_flow(
     scenario: LongitudinalScenarioConfig,
     mesh: LongitudinalMeshSummary,
 ) -> tuple[LongitudinalSolutionSummary, LongitudinalFieldData]:
+    """Solve the v0.2 longitudinal screening field on an ``x-z`` grid.
+
+    The head field satisfies a conductance-weighted steady potential equation
+    ``∇·(K∇h) = 0``. When the feature conductances are uniform, this reduces to the
+    Laplace equation ``∇²h = 0``. Perforated walls, solid barriers, plate zones, and
+    launders enter the model as face-conductance modifiers rather than resolved CFD.
+
+    The finite-volume balance is iterated with Gauss-Seidel updates and successive
+    over-relaxation (SOR). The resulting screening field is then scaled so the inlet
+    discharge matches the requested basin flow per unit width.
+    """
     x_face_conductance, z_face_conductance, boundary_masks = _build_face_conductances(scenario, mesh)
     head = _initial_head_guess(mesh)
 
@@ -188,6 +202,7 @@ def solve_steady_longitudinal_screening_flow(
         x_face_conductance,
         z_face_conductance,
     )
+    bypass_opening_count = sum(1 for feature in scenario.features if isinstance(feature, BypassOpeningFeatureConfig))
 
     summary = LongitudinalSolutionSummary(
         solver_name="v0.2_steady_screening_longitudinal",
@@ -216,6 +231,11 @@ def solve_steady_longitudinal_screening_flow(
             "Reported mass balance error is a screening-flow discharge mismatch diagnostic, not a strict conservation guarantee.",
             "RTD proxy outputs are generated from a deterministic curve derived from the steady field, not from transient transport.",
             "The model is a screening tool only and does not resolve full CFD, solids transport, or mixer blades.",
+            (
+                f"Explicit bypass openings: {bypass_opening_count}."
+                if bypass_opening_count > 0
+                else "No explicit bypass openings are represented in this scenario."
+            ),
             f"Mesh sized at {mesh.nx} x {mesh.nz} cells.",
         ],
     )
@@ -368,6 +388,7 @@ def _build_face_conductances(
 
     _apply_upstream_taper(scenario, mesh, x_face_conductance)
     _apply_feature_conductance_modifiers(scenario, mesh, x_face_conductance, z_face_conductance)
+    _apply_bypass_opening_modifiers(scenario, mesh, x_face_conductance)
 
     return x_face_conductance, z_face_conductance, boundary_masks
 
@@ -503,6 +524,27 @@ def _apply_feature_conductance_modifiers(
                     z_face_conductance[i][k] *= z_modifier
 
 
+def _apply_bypass_opening_modifiers(
+    scenario: LongitudinalScenarioConfig,
+    mesh: LongitudinalMeshSummary,
+    x_face_conductance: list[list[float]],
+) -> None:
+    for feature in scenario.features:
+        if not isinstance(feature, BypassOpeningFeatureConfig):
+            continue
+        face_index = _nearest_internal_x_face(feature.x_m, mesh.dx_m, mesh.nx)
+        opening_conductance = _bypass_opening_conductance(feature.opening_fraction, feature.loss_scale)
+        for k in range(mesh.nz):
+            row_lower = k * mesh.dz_m
+            row_upper = (k + 1) * mesh.dz_m
+            overlap = _interval_overlap_fraction(row_lower, row_upper, feature.z_bottom_m, feature.z_top_m)
+            if overlap <= 0.0:
+                continue
+            existing = x_face_conductance[face_index][k]
+            reopened = ((1.0 - overlap) * existing) + (overlap * opening_conductance)
+            x_face_conductance[face_index][k] = max(existing, reopened)
+
+
 def _solve_head_field(
     scenario: LongitudinalScenarioConfig,
     mesh: LongitudinalMeshSummary,
@@ -511,6 +553,13 @@ def _solve_head_field(
     z_face_conductance: list[list[float]],
     boundary_masks: _BoundaryMasks,
 ) -> tuple[int, bool, float]:
+    """Iterate the conductance-weighted head balance with Gauss-Seidel SOR.
+
+    Each sweep updates the cell-centered head from neighboring face conductances,
+    enforcing the discrete ``∇·(K∇h) = 0`` balance together with the imposed inlet and
+    launder boundary conditions. The returned ``max_delta`` is the largest head change
+    observed in the final iteration.
+    """
     max_delta = 0.0
     converged = False
     iterations = 0
@@ -965,6 +1014,10 @@ def _perforated_baffle_conductance(open_area_fraction: float, loss_scale: float)
     orifice_coefficient = 0.707
     k = ((orifice_coefficient * ((1.0 - phi) ** 0.375)) + 1.0 - (phi * phi)) ** 2 / (phi * phi)
     return max(1.0e-6, phi / (1.0 + (loss_scale * k)))
+
+
+def _bypass_opening_conductance(opening_fraction: float, loss_scale: float) -> float:
+    return max(1.0e-6, min(1.0, opening_fraction / loss_scale))
 
 
 def _nearest_internal_x_face(x_m: float, dx_m: float, nx: int) -> int:

@@ -18,6 +18,7 @@ from .render_animation import (
     _vertical_gradient,
     _write_ppm,
 )
+from .runtime import detect_render_runtime
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,16 @@ def materialize_plan_view_pathline_preview(
     frames_dir = media_dir / "frames"
     frames_dir.mkdir(parents=True, exist_ok=True)
     ffmpeg_path = resolve_ffmpeg_path()
+    encoder: str | None = None
+    video_args: tuple[str, ...] = ("-c:v", "libx264", "-preset", "veryfast", "-crf", "24")
+    if ffmpeg_path:
+        try:
+            runtime = detect_render_runtime(ffmpeg_path=ffmpeg_path, workers=1)
+            ffmpeg_path = runtime.ffmpeg_path
+            encoder = runtime.encoder
+            video_args = runtime.video_args
+        except Exception:
+            encoder = None
     manifest_path = media_dir / "pathline_manifest.json"
     poster_path = media_dir / "pathline_poster.ppm"
 
@@ -109,15 +120,20 @@ def materialize_plan_view_pathline_preview(
             _write_ppm(poster_path, width, height, image)
 
     preview_video_path: Path | None = None
+    preview_encode_error: str | None = None
     if ffmpeg_path:
-        preview_video_path = media_dir / "pathline_preview.mp4"
-        _encode_ppm_sequence(
-            ffmpeg_path=ffmpeg_path,
-            frames_dir=frames_dir,
-            output_path=preview_video_path,
-            fps=fps,
-            video_args=("-c:v", "libx264", "-preset", "medium", "-crf", "23"),
-        )
+        candidate_video_path = media_dir / "pathline_preview.mp4"
+        try:
+            _encode_ppm_sequence(
+                ffmpeg_path=ffmpeg_path,
+                frames_dir=frames_dir,
+                output_path=candidate_video_path,
+                fps=fps,
+                video_args=video_args,
+            )
+            preview_video_path = candidate_video_path
+        except RuntimeError as exc:
+            preview_encode_error = str(exc)
 
     manifest = {
         "type": "plan_view_pathline_preview_v1",
@@ -136,6 +152,8 @@ def materialize_plan_view_pathline_preview(
         "poster_path": str(poster_path),
         "preview_video_path": str(preview_video_path) if preview_video_path else None,
         "ffmpeg_path": ffmpeg_path,
+        "encoder": encoder,
+        "preview_encode_error": preview_encode_error,
         "notes": [
             "Particles follow deterministic pathlines through a steady screening field.",
             "Model time is compressed so basin routing is visible in a short preview.",

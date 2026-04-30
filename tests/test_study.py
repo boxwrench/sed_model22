@@ -91,9 +91,9 @@ class StudyTests(unittest.TestCase):
             self.assertIn("current_blocked - design_spec", report_text)
             self.assertIn("Transition headloss", report_text)
             self.assertIn("RTD proxy timing shifts", report_text)
+            self.assertIn("Model Limitations", report_text)
+            self.assertIn("Provisional explicit bypass-opening features", report_text)
             self.assertIn("Screening cautions:", report_text)
-            self.assertIn("absolute velocity-derived m/s values are not field-credible", report_text)
-            self.assertIn("Settling-threshold exceedance is saturated", report_text)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 

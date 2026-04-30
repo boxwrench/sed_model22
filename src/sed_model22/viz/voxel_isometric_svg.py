@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..config import (
+    BypassOpeningFeatureConfig,
     LaunderZoneFeatureConfig,
     LongitudinalScenarioConfig,
     PerforatedBaffleFeatureConfig,
@@ -218,6 +219,30 @@ def _feature_prisms_svg(
             )
             continue
 
+        if isinstance(feature, BypassOpeningFeatureConfig):
+            x_position = (feature.x_m / scenario.geometry.basin_length_m) * x_count
+            z_bottom = (feature.z_bottom_m / scenario.geometry.water_depth_m) * z_count
+            z_top = (feature.z_top_m / scenario.geometry.water_depth_m) * z_count
+            shapes.append(
+                _prism_svg(
+                    x_position,
+                    min(x_position + 0.18, x_count),
+                    0.0,
+                    float(y_count),
+                    z_bottom,
+                    z_top,
+                    tile_width,
+                    tile_height,
+                    z_scale,
+                    origin_x,
+                    origin_y,
+                    "#22c55e",
+                    0.72,
+                    "#15803d",
+                )
+            )
+            continue
+
         if isinstance(feature, PlateSettlerZoneFeatureConfig):
             x_start = (feature.x_start_m / scenario.geometry.basin_length_m) * x_count
             x_end = (feature.x_end_m / scenario.geometry.basin_length_m) * x_count
@@ -281,11 +306,16 @@ def _annotation_svg(
     origin_y: float,
 ) -> list[str]:
     wall_label_title, wall_label_subtitle = _transition_wall_display_label(scenario)
+    explicit_bypass = any(isinstance(feature, BypassOpeningFeatureConfig) for feature in scenario.features)
     layers = [
         "  <text x='78' y='720' font-family='monospace' font-size='15' font-weight='700' fill='#0f172a'>Display Notes</text>",
         "  <text x='78' y='746' font-family='monospace' font-size='13' fill='#334155'>- This is a 2.5D presentation of the current longitudinal screening field.</text>",
         "  <text x='78' y='768' font-family='monospace' font-size='13' fill='#334155'>- Width is extruded uniformly for readability. This is not a full 3D solve.</text>",
-        "  <text x='78' y='790' font-family='monospace' font-size='13' fill='#334155'>- The transition wall is rendered as a solid panel for readability, even though v0.2 still models it as a loss interface.</text>",
+        (
+            "  <text x='78' y='790' font-family='monospace' font-size='13' fill='#334155'>- The blocked transition wall is rendered as a solid panel with explicit provisional bypass openings.</text>"
+            if explicit_bypass
+            else "  <text x='78' y='790' font-family='monospace' font-size='13' fill='#334155'>- The transition wall is rendered as a solid panel for readability, even though v0.2 still models it as a loss interface.</text>"
+        ),
         "  <text x='78' y='812' font-family='monospace' font-size='13' fill='#334155'>- Relative speed bands are more honest here than absolute m/s because the present study still has large discharge-mismatch diagnostics.</text>",
     ]
 
@@ -314,6 +344,27 @@ def _annotation_svg(
                 "  <rect x='1132' y='138' width='210' height='44' rx='8' fill='#fff7ed' stroke='#fdba74' stroke-width='1.5' />",
                 f"  <text x='1144' y='158' font-family='monospace' font-size='13' font-weight='700' fill='#9a3412'>{wall_label_title}</text>",
                 f"  <text x='1144' y='174' font-family='monospace' font-size='12' fill='#7c2d12'>{wall_label_subtitle}</text>",
+            ]
+        )
+
+    bypass_feature = next((feature for feature in scenario.features if isinstance(feature, BypassOpeningFeatureConfig)), None)
+    if bypass_feature is not None:
+        bypass_point = _project_point(
+            (bypass_feature.x_m / scenario.geometry.basin_length_m) * x_count + 0.10,
+            float(y_count),
+            (bypass_feature.z_top_m / scenario.geometry.water_depth_m) * z_count,
+            tile_width,
+            tile_height,
+            z_scale,
+            origin_x,
+            origin_y,
+        )
+        layers.extend(
+            [
+                f"  <line x1='{bypass_point[0]:.1f}' y1='{bypass_point[1]:.1f}' x2='1114' y2='226' stroke='#15803d' stroke-width='1.4' />",
+                "  <rect x='1118' y='194' width='220' height='44' rx='8' fill='#f0fdf4' stroke='#86efac' stroke-width='1.5' />",
+                "  <text x='1130' y='214' font-family='monospace' font-size='13' font-weight='700' fill='#166534'>Explicit bypass openings</text>",
+                "  <text x='1130' y='230' font-family='monospace' font-size='12' fill='#166534'>Provisional top and bottom wall gaps</text>",
             ]
         )
 
@@ -554,10 +605,13 @@ def _clamp_color(value: float) -> int:
 
 
 def _transition_wall_display_label(scenario: LongitudinalScenarioConfig) -> tuple[str, str]:
+    has_explicit_bypass = any(isinstance(feature, BypassOpeningFeatureConfig) for feature in scenario.features)
     for feature in scenario.features:
-        if feature.name != "transition_wall" or not isinstance(feature, PerforatedBaffleFeatureConfig):
+        if feature.name != "transition_wall" or not isinstance(feature, (PerforatedBaffleFeatureConfig, SolidBaffleFeatureConfig)):
             continue
-        if feature.open_area_fraction <= 0.005 or feature.loss_scale >= 4.0:
+        if isinstance(feature, SolidBaffleFeatureConfig) and has_explicit_bypass:
+            return "Blocked transition wall", "Rendered solid with explicit bypass openings"
+        if isinstance(feature, PerforatedBaffleFeatureConfig) and (feature.open_area_fraction <= 0.005 or feature.loss_scale >= 4.0):
             return "Blocked transition wall", "Rendered solid for readability"
         return "Transition wall", "Shown as solid display geometry"
     return "Transition wall", "Shown as solid display geometry"

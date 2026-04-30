@@ -101,13 +101,13 @@ What it does not change:
 Important plant note for future versions:
 
 - the real basin still passes flow when the perforated wall is blocked because the basin has a serpentine over-under path
-- therefore, a future higher-confidence current-state model must represent the actual bypass path explicitly
-- a future geometry-verification pass should reconcile the exact dimensions, wall details, and active flow path from drawings and field observation
+- the current repo now represents that with provisional explicit top/bottom bypass openings in the `v0.2` current-state scenario
+- a future geometry-verification pass should reconcile the exact dimensions, wall details, and active flow path from drawings and field observation so those provisional openings stop being assumptions
 
 Working rule:
 
 - `v0.2` is for proving the comparison workflow and the decision-support procedure
-- later versions are where geometry verification, explicit bypass representation, and possibly explicit orifice geometry should be added
+- later versions are where geometry verification, stronger bypass-path refinement, and possibly explicit orifice geometry should be added
 
 ## Implementation Order
 

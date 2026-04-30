@@ -1,7 +1,7 @@
 metadata:
   case_id: svwtp_current_blocked_wall
   title: SVWTP Current Blocked Wall Basin
-  description: Current-as-built longitudinal screening model with backer boards blocking the transition wall.
+  description: Current-as-built longitudinal screening model with backer boards blocking the transition wall plus provisional explicit top and bottom bypass openings.
   stage: v0.2
 
 model_form: longitudinal_v0_2
@@ -24,14 +24,29 @@ upstream:
   mixing_intensity_factor: 1.0
 
 features:
-  - kind: perforated_baffle
+  - kind: solid_baffle
     name: transition_wall
     x_m: 2.0
     z_bottom_m: 0.0
     z_top_m: 3.35
-    open_area_fraction: 0.001
     plate_thickness_m: 0.02
-    loss_scale: 4.0
+    loss_scale: 1.0
+  - kind: bypass_opening
+    name: transition_under_bypass
+    path_type: under
+    x_m: 2.0
+    z_bottom_m: 0.0
+    z_top_m: 0.12
+    opening_fraction: 0.12
+    loss_scale: 1.0
+  - kind: bypass_opening
+    name: transition_over_bypass
+    path_type: over
+    x_m: 2.0
+    z_bottom_m: 3.15
+    z_top_m: 3.35
+    opening_fraction: 0.12
+    loss_scale: 1.0
   - kind: plate_settler_zone
     name: plate_zone
     x_start_m: 70.0

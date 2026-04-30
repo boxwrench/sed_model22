@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..config import (
+    BypassOpeningFeatureConfig,
     LaunderZoneFeatureConfig,
     LongitudinalScenarioConfig,
     PerforatedBaffleFeatureConfig,
@@ -53,6 +54,18 @@ def build_longitudinal_layout_svg(scenario: LongitudinalScenarioConfig) -> str:
             )
             layers.append(
                 f"  <text x='{x + 6:.1f}' y='{sz(feature.z_top_m) - 4:.1f}' font-family='monospace' font-size='11' fill='{color}'>{feature.name}</text>"
+            )
+            continue
+
+        if isinstance(feature, BypassOpeningFeatureConfig):
+            x = sx(feature.x_m) - 6.0
+            y = sz(feature.z_top_m)
+            height = sz(feature.z_bottom_m) - sz(feature.z_top_m)
+            layers.append(
+                f"  <rect x='{x:.2f}' y='{y:.2f}' width='12' height='{height:.2f}' fill='#22c55e' opacity='0.65' stroke='#15803d' stroke-width='2' />"
+            )
+            layers.append(
+                f"  <text x='{x + 14:.1f}' y='{y + 12:.1f}' font-family='monospace' font-size='11' fill='#166534'>{feature.name}</text>"
             )
             continue
 
